@@ -10,7 +10,11 @@
 # Example programs
 
 ```
+(define test-weapon (make-weapon ...))
+(define test-E (make-skill ...))
+(define test-Q (make-skill ...))
 (define test-char (make-char ...))
+(define test-enemy (make-enemy ...))
 ```
 
 

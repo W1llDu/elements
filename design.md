@@ -131,6 +131,11 @@ of the game, and the data our DSL will need to collect.
 ;; Creates a named character representation with base stats, 2 skills, and artifacts
 (define-character name hp def atk em critr critd attacks weapon skill1 skill2 artifacts ...)
 
+;; A buff is one of
+;; - triggered-buff
+;; - unconditional-buff
+;; - applied-buff
+
 ;; Creates a named buff representation with an effect, trigger,
 ;; stack limit, target type, and a duration
 (triggered-buff [name #:effect e

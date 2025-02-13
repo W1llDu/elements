@@ -76,12 +76,12 @@ of the game, and the data our DSL will need to collect.
 (define-skill basic-slash
   5.0 ;; cooldown
   1.0 ;; duration (where character cannot do anything else)
-  (#:damage
+  (damage
    [(atk 25)
    #:duration 0.1
    #:type pyro]) ;; deal damage equal to 25% of attack, occurs after 0.1 seconds, pyro (fire) damage
   
-  (#:applied-buff
+  (applied-buff
    [skill-hpup
    #:effect (hp (atk 10))
    #:limit 1
@@ -163,10 +163,31 @@ of the game, and the data our DSL will need to collect.
 ;; Creates a named character representation with base stats, 2 skills, and artifacts
 (define-character name hp def atk em critr critd attacks weapon skill1 skill2 artifact ...)
 
-;; A <buff> is one of
+;; Creates a named attack sequence representation with attacks that scale off of character stats,
+;; with each attack lasting a specific period of time. Also includes a charged attack, which is a 
+;; more powerful normal attack
+(define-attack-sequence name ([(stat percent) duration] ...
+                             #charged [(stat percent) duration]))
+
+;; Creates a named artifact representation with a set name and list of stat/attribute increases
+(define-artifact name set (stat increase) ...)
+
+;; A stat is one of of the following
+;; stat := atk ;; flat attack
+         | atk% ;; attack percent
+         | def ;; flat defense
+         | def% ;; defense percent
+         | hp ;; flat hp
+         | hp% ;; hp percent
+         | critr ;; crit rate
+         | critd ;; crit damage
+         | em ;; elemental mastery
+
+;; A buff is one of
 ;; - triggered-buff
 ;; - unconditional-buff
 ;; - applied-buff
+;; - damage
 
 ;; Creates a named buff representation with an effect, trigger,
 ;; stack limit, target type, and a duration
@@ -187,6 +208,27 @@ of the game, and the data our DSL will need to collect.
                     #:limit l
                     #:target target
                     #:duration])
+
+;; creates a named buff representation that deals damage based on the percentage of a stat
+;; after d seconds, with a specified type
+(damage [(stat percent)
+         #:at-time d
+         #:type dmg-type])
+         
+;; creates a named representation of a Genshin team lineup
+(define-team-lineup name (character ... ))
+
+;; calculates the damage of a rotation for a given team
+(calculate-rotation-damage team-lineup (action ...))
+
+;; set of possible actions
+;; action := N ;; a normal attack
+           | E ;; uses their skill
+           | Q ;; uses their second skill (burst)
+           | ND ;; nomal attack + dash cancel
+           | C ;; charged attack
+           | Swap <String> ;; switches to character with matching string name
+
 ```
 
 

@@ -1,18 +1,32 @@
 # Purpose
 
+## Concepts
+
+1. Characters
+2. Teams
+3. Enemies
+
+
 # Example programs
 
 ```
-(lambda)
+(define test-char (make-char ...))
 ```
+
 
 # Grammar and Signatures
 
 ## Grammar
 
+```
+```
+
 ## Signatures
+
+```
+```
+
 
 # Implementation milestones
 
-1. fff
-2. 3
+1.

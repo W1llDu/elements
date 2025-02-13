@@ -1,39 +1,157 @@
 # Purpose
+The purpose of this DSL is to provide an easy way for Genshin players to calculate and potentially
+optimize their rotations. More concretely, this means maximizing the amount of damage their characters
+do over a short, set period of time. The idea initially sprang to mind due to personal experiences we
+had both faced as players of the game. The game contains many complex mechanics (which are discussed below),
+and the result is a near infinite number of potential ways to set up characters deal damage. This obviously
+makes it very hard to predict what actions will produce the highest and largest amounts of damage. Since
+the purpose of the game essentially boils down to producing the highest and largest amounts of damage, we were
+of course frustrated that there was not an easier way to figure it all out. Calculators for the game exist online,
+but mostly focus on optimizing the characters themselves, not how you actually play them. There's a key distinction there,
+as I could tell you have a rare lawn gnome worth $1.5 million USD, but that's not much use to you if you
+have know idea where to sell it (because let's be real, that's a pretty niche market). All of that is to say 
+that tools to calculate rotation damage for Genshin are severely lacking. So, the purpose of this DSL is to remedy
+that. At a baseline, this DSL should be able to calculate damage values for a rotation when given the proper details
+and setup, which will be described later. Additionally, this DSL will allow for the querying of buffs at specific times
+within rotations, to see if damage is truly being optimized. Going even further, the DSL should be able to attempt potential
+action strings to see if it can optimize damage. Finally, the DSL should be able to print some sort of visual, time permitting.
+In order to further understand the purpose of this DSL, please refer to the concepts below, to gain a better understanding
+of the game, and the data our DSL will need to collect.
 
 ## Concepts
-
 1. Characters
    1. Base statistics determine damage floor
+   2. Base stats are HP, Defense, Attack, Crit Rate, Crit Damage, and Elemental Mastery (em) 
    2. Normal attacks (Charged and Plunging) and Skills scale off of these stats
-   3. They can hold weapons and other items that provide buffs to these stats or other aspects of their damage output
-   4. These buffs usually last for a limited time or have specific conditions to apply.
-3. Teams
-   1.
-5. Enemies
-
+   3. Character have access to an elemental skill and elemental burst, both of which are activated abilities that deal damage or apply buffs.
+   4. They can hold weapons and other items that provide buffs to these stats or other aspects of their damage output
+   5. Buffs are divided into multiple categories. Certain buffs have durations and require triggers, or activations, to gain their effects.
+   For instance, a buff could be activated by doing a normal attack, and last for 10 seconds.
+   6. Other buffs have a duration, but are applied after a burst or skill, meaning they have no specific trigger otherwise.
+   7. Finally, certain buffs are unconditional, and are always active no matter what.
+   8. In the case of all buffs, they can either apply to the character activating them, or to every member of the team at once.
+   
+2. Teams
+   1. Every character is part of a team.
+   2. A team can have up to 4 characters in it.
+   3. Only one character is capable of attacking at a time, known as "being on the field".
+   4. Characters on a given team can be switched between on a short (basically negligible) cooldown.
+   5. The actions a player takes over a duration of time while using a team (for instance, attacking, switching, using skills, etc.)
+   is called a "rotation".
+   6. An optimal team is the one that deals the most amount of damage in a single rotation.
+3. Enemies
+   1. Enemies represent a smaller but still important aspect of the game for optimization purposes (and thus the DSL).
+   2. When a character attacks with damage that has a specific element, that element is applied to the enemy they attack.
+   3. If an enemy already has an element at the time this application occurs, the two elements interact, and cause a damage modifier to be applied.
+   4. This action also clears all elements currently applied to the enemy.
+   5. Examples of elements interacting, known as "Reactions", are defined as follows:
+   6. Melt: Pyro + Cryo, deals 2x damage
+   7. Vaporize: Pyro + Hydro, deals 1.5x damage
+   8. Overload: Pyro + Electro, deals damage that scales off elemental mastery
+   9. Electro-Charged: Hydro + Electro, deals damage that scales off elemental mastery
+   10. Super-conduct: Cryo + Electro, deals damage that scales off elemental mastery
+   11. Swirl: Anemo + Pyro, Cryo, Electro, or Hydro, deals damage that scales off elemental mastery
 
 # Example programs
 
 ```
-(define test-weapon (make-weapon ...))
-(define test-E (make-skill ...))
-(define test-Q (make-skill ...))
-(define test-char (make-char ...))
-(define test-enemy (make-enemy ...))
+(define-weapon test-weapon
+  
+  450 ;; base attack stat
+  (critr 24.1) ;; substat (crit rate)
+  (triggered-buff
+   [dmgup
+   #:effect (atk% 20.0) ;; increase atk by 20%
+   #:trigger normal-attack
+   #:limit 1
+   #:target self  
+   #:duration 10.0])
+  
+  (buff-unconditional
+   [crit-up
+   #:effect (critd 20) ;; increase crit damage by 20%
+   #:target self]) 
+)
+
+(define-attack-sequence attack-chain
+  ([(atk% 10) 0.5]
+   [(atk% 25) 0.2]
+   [(atk% 125) 0.8]
+   [(atk% 250) 1.5]
+   #:charged
+   [(hp% 5) 3.5]))
+
+(define-artifact test-feather
+  "cool feather collection" ;; set name
+  (atk 325)
+  (atk% 27)
+  (em 42)
+)
+
+(define-artifact test-goblet
+  "cool goblet collection" ;; set name
+  (dmg-pyro 46.6)
+  (critd 16.2)
+  (critr 3.0)
+  (def 128)
+)
+
+(define-character test-char
+  12000 ;; base hp
+  500   ;; base def
+  900   ;; base atk
+  20    ;; base em
+  5     ;; base crit rate
+  50    ;; base crit damage
+  attack-chain
+  test-weapon ;; weapon
+  basic-slash ;; skill
+  all-attack-up ;; burst
+  #:artifacts
+  test-feather
+  test-goblet
+  )
+
+(define-team-lineup lone-member '(test-char))
+(calculate-rotation-damage lone-member '(N N N C E N ND N ND Q N ND E))
+
 ```
 
 
 # Grammar and Signatures
-
-## Grammar
-
 ```
+;; Creates a named weapon representation with
+;; damage, a substat, and applicable buffs
+(define-weapon name dmg substat buffs ...)
+
+;; Creates a named skill representation with
+;; a cooldown, duration, and applicable buffs
+(define-skill name cooldown duration buffs ...)
+
+;; Creates a named character representation with base stats, 2 skills, and artifacts
+(define-character name hp def atk em critr critd attacks weapon skill1 skill2 artifacts ...)
+
+;; Creates a named buff representation with an effect, trigger,
+;; stack limit, target type, and a duration
+(triggered-buff [name #:effect e
+                      #:trigger t
+                      #:limit l
+                      #:target target
+                      #:duration d])
+                      
+;; Creates a named buff representation that is always active
+;; with an effect and target type
+(unconditional-buff [name #:effect e
+                          #:target target])
+
+;; Creates a named buff representation that is timed with no trigger
+;; with an effect, stack limit, target type, and duration
+(applied-buff [name #:effect e
+                    #:limit l
+                    #:target target
+                    #:duration])
 ```
 
-## Signatures
-
-```
-```
 
 
 # Implementation milestones

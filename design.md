@@ -152,82 +152,97 @@ of the game, and the data our DSL will need to collect.
 
 # Grammar and Signatures
 ```
+Vocabulary:
+a name is a String representing the name of some representation
+a duration is a number (Decimals allowed) representing time
+
+Grammars:
 ;; Creates a named weapon representation with
 ;; damage, a substat, and applicable buffs
-(define-weapon name dmg substat buff ...)
+<weapon> := (define-weapon name Int (<stat> Int) <buff> ...)
 
 ;; Creates a named skill representation with
 ;; a cooldown, duration, and applicable buffs
-(define-skill name cooldown duration buff ...)
+<skill> := (define-skill name Int Int <buff> ...)
 
 ;; Creates a named character representation with base stats, 2 skills, and artifacts
-(define-character name hp def atk em critr critd attacks weapon skill1 skill2 artifact ...)
+<character> := (define-character Int Int Int Int Int Int Int <attack> <weapon> <skill> <skill> <artifact> ...)
 
 ;; Creates a named attack sequence representation with attacks that scale off of character stats,
 ;; with each attack lasting a specific period of time. Also includes a charged attack, which is a 
 ;; more powerful normal attack
-(define-attack-sequence name ([(stat percent) duration] ...
-                             #charged [(stat percent) duration]))
+<attack> := (define-attack-sequence name ([(<stat> Number) duration] ...
+                                         #charged [(stat percent) duration]))
 
 ;; Creates a named artifact representation with a set name and list of stat/attribute increases
-(define-artifact name set (stat increase) ...)
+<artifact> := (define-artifact name <String> (<stat> Number) ...)
 
-;; A stat is one of of the following
-;; stat := atk ;; flat attack
-         | atk% ;; attack percent
-         | def ;; flat defense
-         | def% ;; defense percent
-         | hp ;; flat hp
-         | hp% ;; hp percent
-         | critr ;; crit rate
-         | critd ;; crit damage
-         | em ;; elemental mastery
+;; A stat is one of of the following symbols
+;; <stat> := atk ;; flat attack
+           | atk% ;; attack percent
+           | def ;; flat defense
+           | def% ;; defense percent
+           | hp ;; flat hp
+           | hp% ;; hp percent
+           | critr ;; crit rate
+           | critd ;; crit damage
+           | em ;; elemental mastery
 
-;; A buff is one of
-;; - triggered-buff
-;; - unconditional-buff
-;; - applied-buff
-;; - damage
+;; <buff> := <triggered-buff>
+;;         | <unconditional-buff>
+;;         | <applied-buff>
+;;         | <damage>
+
+;; <target> := SELF
+             | ALL
 
 ;; Creates a named buff representation with an effect, trigger,
 ;; stack limit, target type, and a duration
-(triggered-buff [name #:effect e
-                      #:trigger t
-                      #:limit l
-                      #:target target
-                      #:duration d])
+<triggered-buff> := (triggered-buff [name #:effect (<stat> (<stat> Number))
+                                          #:trigger <id>
+                                          #:limit Int
+                                          #:target <target>
+                                          #:duration duration])
                       
 ;; Creates a named buff representation that is always active
 ;; with an effect and target type
-(unconditional-buff [name #:effect e
-                          #:target target])
+<unconditional-buff> := (unconditional-buff [name #:effect e
+                                                 #:target target])
 
 ;; Creates a named buff representation that is timed with no trigger
 ;; with an effect, stack limit, target type, and duration
-(applied-buff [name #:effect e
-                    #:limit l
-                    #:target target
-                    #:duration])
+<applied-buff> := (applied-buff [name #:effect (<stat> (<stat> Number))
+                                      #:limit Int
+                                      #:target <target>
+                                      #:duration duration])
+
+;; <damage-type> := pyro
+                  | hydro
+                  | electro
+                  | cryo
+                  | geo
+                  | anemo
+                  | dendro
 
 ;; creates a named buff representation that deals damage based on the percentage of a stat
 ;; after d seconds, with a specified type
-(damage [(stat percent)
-         #:at-time d
-         #:type dmg-type])
+<damage> := (damage [(stat Number)
+                     #:at-time Number
+                     #:type <damage-type>])
          
 ;; creates a named representation of a Genshin team lineup
-(define-team-lineup name (character ... ))
+<team> := (define-team-lineup name (<character> ... ))
 
 ;; calculates the damage of a rotation for a given team
-(calculate-rotation-damage team-lineup (action ...))
+<rotation-damage> := (calculate-rotation-damage <team> (<action> ...))
 
 ;; set of possible actions
-;; action := N ;; a normal attack
-           | E ;; uses their skill
-           | Q ;; uses their second skill (burst)
-           | ND ;; nomal attack + dash cancel
-           | C ;; charged attack
-           | Swap <String> ;; switches to character with matching string name
+;; <action> := N ;; a normal attack
+             | E ;; uses their skill
+             | Q ;; uses their second skill (burst)
+             | ND ;; nomal attack + dash cancel
+             | C ;; charged attack
+             | Swap <String> ;; switches to character with matching string name
 
 ```
 

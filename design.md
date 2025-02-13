@@ -73,6 +73,38 @@ of the game, and the data our DSL will need to collect.
    #:target self]) 
 )
 
+(define-skill basic-slash
+  5.0 ;; cooldown
+  1.0 ;; duration (where character cannot do anything else)
+  (#:damage
+   [(atk 25)
+   #:duration 0.1
+   #:type pyro]) ;; deal damage equal to 25% of attack, occurs after 0.1 seconds, pyro (fire) damage
+  
+  (#:applied-buff
+   [skill-hpup
+   #:effect (hp (atk 10))
+   #:limit 1
+   #:target self
+   #:duration 10.0]) ;; increase hp by 10% of atk, only applies to current character
+)
+
+;; note : duration is optional
+(define-skill all-attack-up  
+  25.0
+  2.0
+  (damage
+   [(atk% 125)
+   #:duration 0.1
+   #:type pyro])
+  (applied-buff
+   [skill-atkup
+   #:effect (atk% (atk 125))
+   #:limit 1
+   #:target all
+   #:duration 10]) ;; this time applies to all members of a lineup
+)
+
 (define-attack-sequence attack-chain
   ([(atk% 10) 0.5]
    [(atk% 25) 0.2]

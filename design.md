@@ -154,14 +154,14 @@ of the game, and the data our DSL will need to collect.
 ```
 ;; Creates a named weapon representation with
 ;; damage, a substat, and applicable buffs
-(define-weapon name dmg substat <buff> ...)
+(define-weapon name dmg substat buff ...)
 
 ;; Creates a named skill representation with
-;; a cooldown, duration, and applicable <buff>
-(define-skill name cooldown duration <buff> ...)
+;; a cooldown, duration, and applicable buffs
+(define-skill name cooldown duration buff ...)
 
 ;; Creates a named character representation with base stats, 2 skills, and artifacts
-(define-character name hp def atk em critr critd attacks weapon skill1 skill2 artifacts ...)
+(define-character name hp def atk em critr critd attacks weapon skill1 skill2 artifact ...)
 
 ;; A <buff> is one of
 ;; - triggered-buff

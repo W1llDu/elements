@@ -173,7 +173,7 @@ Grammars:
 
 <define> := (define-weapon name Int (<stat> Int) <buff> ...)
           | (define-skill name Int Int <buff> ...)
-          | (define-character name Element Int Int Int Int Int Int AttackSequence Weapon Skill Skill Artifact Artifact Artifact Artifact Artifact)
+          | (define-character name Element Int Int Int Int Int Int AttackSequence Weapon Skill Skill (Tuple <buff> <buff> <buff> <buff> <buff> <buff>) <buff> <buff> Artifact Artifact Artifact Artifact Artifact)
           | (define-attack-sequence name ([(<stat> Number) duration] ...
                                          #charged [(<stat> Number) duration]
                                          #plunging (<stat> Number)))

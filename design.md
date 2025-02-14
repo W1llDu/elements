@@ -237,4 +237,7 @@ Grammars:
 
 # Implementation milestones
 
-1.
+1. Define data structures and macros for damage, buffs, timings
+2. Implement basic damage calulations for different enemies
+3. Implement buff calculations
+4. Implement elemental reaction calculations

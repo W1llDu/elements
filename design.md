@@ -45,12 +45,12 @@ of the game, and the data our DSL will need to collect.
    3. If an enemy already has an element at the time this application occurs, the two elements interact, and cause a damage modifier to be applied.
    4. This action also clears all elements currently applied to the enemy.
    5. Examples of elements interacting, known as "Reactions", are defined as follows:
-     1. Melt: Pyro + Cryo, deals 2x damage
-     2. Vaporize: Pyro + Hydro, deals 1.5x damage
-     3. Overload: Pyro + Electro, deals damage that scales off elemental mastery
-     4. Electro-Charged: Hydro + Electro, deals damage that scales off elemental mastery
-     5. Super-conduct: Cryo + Electro, deals damage that scales off elemental mastery
-     6. Swirl: Anemo + Pyro, Cryo, Electro, or Hydro, deals damage that scales off elemental mastery
+      1. Melt: Pyro + Cryo, deals 2x damage
+      2. Vaporize: Pyro + Hydro, deals 1.5x damage
+      3. Overload: Pyro + Electro, deals damage that scales off elemental mastery
+      4. Electro-Charged: Hydro + Electro, deals damage that scales off elemental mastery
+      5. Super-conduct: Cryo + Electro, deals damage that scales off elemental mastery
+      6. Swirl: Anemo + Pyro, Cryo, Electro, or Hydro, deals damage that scales off elemental mastery
 
 
 # Example programs

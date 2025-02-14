@@ -165,6 +165,7 @@ Grammars:
           | (define-attack-sequence name ([(<stat> Number) duration] ...
                                          #charged [(stat Number) duration]))
           | (define-artifact name <String> (<stat> Number) ...)
+          | (define-team-lineup name (Var ... ))
 
 ;; A stat is one of of the following symbols
 ;; <stat> := atk ;; flat attack
@@ -219,17 +220,14 @@ Grammars:
                      #:at-time Number
                      #:type <damage-type>])
          
-;; creates a named representation of a Genshin team lineup
-<team> := (define-team-lineup name (Var ... ))
-
 ;; calculates the damage of a rotation for a given team
-<rotation-damage> := (calculate-rotation-damage <team> (<action> ...))
+<rotation-damage> := (calculate-rotation-damage Var (<action> ...))
 
 ;; set of possible actions
 ;; <action> := N ;; a normal attack
              | E ;; uses their skill
              | Q ;; uses their second skill (burst)
-             | ND ;; nomal attack + dash cancel
+             | ND ;; normal attack + dash cancel
              | C ;; charged attack
              | Swap <String> ;; switches to character with matching string name
 

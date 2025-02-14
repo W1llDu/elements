@@ -161,9 +161,9 @@ Grammars:
 
 <define> := (define-weapon name Int (<stat> Int) <buff> ...)
           | (define-skill name Int Int <buff> ...)
-          | (define-character Int Int Int Int Int Int Int Var Var Var Var Var ...)
+          | (define-character Int Int Int Int Int Int AttackSequence Weapon Skill Skill Artifact ...)
           | (define-attack-sequence name ([(<stat> Number) duration] ...
-                                         #charged [(stat Number) duration]))
+                                         #charged [(<stat> Number) duration]))
           | (define-artifact name <String> (<stat> Number) ...)
           | (define-team-lineup name (Var ... ))
 

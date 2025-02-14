@@ -142,6 +142,9 @@ of the game, and the data our DSL will need to collect.
   test-weapon ;; weapon
   basic-slash ;; skill
   all-attack-up ;; burst
+  (<buff> <buff> <buff> <buff> <buff> <buff>) ;; constellation passive buffs
+  <buff> ;; ascension passive buffs
+  <buff>
   #:feather test-feather
   #:goblet test-goblet
   )

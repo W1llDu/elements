@@ -155,27 +155,16 @@ of the game, and the data our DSL will need to collect.
 Vocabulary:
 a name is a String representing the name of some representation
 a duration is a number (Decimals allowed) representing time
+a Var is a sequence of characters and/or numbers, with no spaces
 
 Grammars:
-;; Creates a named weapon representation with
-;; damage, a substat, and applicable buffs
-<weapon> := (define-weapon name Int (<stat> Int) <buff> ...)
 
-;; Creates a named skill representation with
-;; a cooldown, duration, and applicable buffs
-<skill> := (define-skill name Int Int <buff> ...)
-
-;; Creates a named character representation with base stats, 2 skills, and artifacts
-<character> := (define-character Int Int Int Int Int Int Int <attack> <weapon> <skill> <skill> <artifact> ...)
-
-;; Creates a named attack sequence representation with attacks that scale off of character stats,
-;; with each attack lasting a specific period of time. Also includes a charged attack, which is a 
-;; more powerful normal attack
-<attack> := (define-attack-sequence name ([(<stat> Number) duration] ...
-                                         #charged [(stat percent) duration]))
-
-;; Creates a named artifact representation with a set name and list of stat/attribute increases
-<artifact> := (define-artifact name <String> (<stat> Number) ...)
+<define> := (define-weapon name Int (<stat> Int) <buff> ...)
+          | (define-skill name Int Int <buff> ...)
+          | (define-character Int Int Int Int Int Int Int Var Var Var Var Var ...)
+          | (define-attack-sequence name ([(<stat> Number) duration] ...
+                                         #charged [(stat Number) duration]))
+          | (define-artifact name <String> (<stat> Number) ...)
 
 ;; A stat is one of of the following symbols
 ;; <stat> := atk ;; flat attack
@@ -231,7 +220,7 @@ Grammars:
                      #:type <damage-type>])
          
 ;; creates a named representation of a Genshin team lineup
-<team> := (define-team-lineup name (<character> ... ))
+<team> := (define-team-lineup name (Var ... ))
 
 ;; calculates the damage of a rotation for a given team
 <rotation-damage> := (calculate-rotation-damage <team> (<action> ...))

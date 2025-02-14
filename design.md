@@ -260,6 +260,7 @@ Grammars:
 1. Define data structures and macros for characters, weapons, artifacts, enemies, skills, damage, buffs, and timings
 2. Implement basic damage calulations for different enemies (base stats only + stat increases)
 4. Implement buff calculations (weapon/artifact applied/unconditional, then triggered-buff)
+
 In any order:
 - Implement elemental reaction calculations
 - Implement attack string optimizer

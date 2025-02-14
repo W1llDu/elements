@@ -144,6 +144,11 @@ of the game, and the data our DSL will need to collect.
   test-goblet
   )
 
+(define-enemy dummy
+  100000
+  1000
+  )
+
 (define-team-lineup lone-member '(test-char))
 (calculate-rotation-damage lone-member '(N N N C E N ND N ND Q N ND E))
 
@@ -161,11 +166,12 @@ Grammars:
 
 <define> := (define-weapon name Int (<stat> Int) <buff> ...)
           | (define-skill name Int Int <buff> ...)
-          | (define-character Int Int Int Int Int Int AttackSequence Weapon Skill Skill Artifact ...)
+          | (define-character Element Int Int Int Int Int Int AttackSequence Weapon Skill Skill Artifact ...)
           | (define-attack-sequence name ([(<stat> Number) duration] ...
                                          #charged [(<stat> Number) duration]))
           | (define-artifact name <String> (<stat> Number) ...)
           | (define-team-lineup name (Var ... ))
+          | (define-enemy Element Int Int)
 
 ;; A stat is one of of the following symbols
 ;; <stat> := atk ;; flat attack
@@ -221,7 +227,7 @@ Grammars:
                      #:type <damage-type>])
          
 ;; calculates the damage of a rotation for a given team
-<rotation-damage> := (calculate-rotation-damage Var (<action> ...))
+<rotation-damage> := (calculate-rotation-damage Team Enemy (<action> ...))
 
 ;; set of possible actions
 ;; <action> := N ;; a normal attack
@@ -237,7 +243,7 @@ Grammars:
 
 # Implementation milestones
 
-1. Define data structures and macros for damage, buffs, timings
-2. Implement basic damage calulations for different enemies
-3. Implement buff calculations
+1. Define data structures and macros for characters, weapons, artifacts, enemies, skills, damage, buffs, and timings
+2. Implement basic damage calulations for different enemies (base stats only + stat increases)
+3. Implement buff calculations (weapon/artifact applied/unconditional, then triggered-buff)
 4. Implement elemental reaction calculations

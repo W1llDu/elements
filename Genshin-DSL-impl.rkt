@@ -2,6 +2,38 @@
 (require (for-syntax syntax/parse))
 (require syntax-spec-v3 (for-syntax syntax/parse syntax/to-string))
 
+
+(syntax-spec
+
+ (extension-class genshin-macro #:binding-space genshin)
+
+ (host-interface/definitions
+  (define-weapon name:id damage:number attr:attribute buffs:buff ...)
+  #'(compile-define-weapon name damage attr buffs ...))
+
+ (nonterminal stat
+              hp
+              atk
+              def
+              em
+              critr
+              critd)
+
+ (nonterminal attribute
+              (attr:stat percent:number))
+
+(nonterminal buff
+             #:binding-space genshin
+             (triggered-buff [name:id #:effect attr:attribute
+                                      #:trigger trigger:racket-expr
+                                      #:limit limit:number
+                                      #:party-wide party-wide:boolean
+                                      #:duration duration:number])
+             (unconditional-buff [name:id #:effect attr:attribute
+                                          #:party-wide party-wide:boolean]))
+
+ )
+
 ;; define basic stats + calculations
 (define-struct character [hp atk def critr critd em attacks weapon artifacts])
 (define-struct state-handler [character active-buffs time])
@@ -30,7 +62,7 @@
       [(_ (~datum em) percent:number)
        #'(make-attribute (lambda (x) (character-em x)) percent)])))
 
-(define-syntax define-weapon
+(define-syntax compile-define-weapon
   (lambda (stx)
     (syntax-parse stx
       [(_ name:id damage:number (attr percent) buffs ...)
@@ -72,6 +104,19 @@
     (syntax-parse stx
       [(_ name:id set-name:string (mattr mstat) (sattr sstat) ...)
        #'(define name (make-artifact set-name (make-stat mattr mstat) (make-stat sattr sstat) ...))])))
+
+(define-syntax define-character
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ name #:hp hp:number #:def def:number #:atk atk:number #:em em:number #:critr critr:number #:critd critd:number
+          #:normal-attacks na:id #:skill skill:id #:burst burst:id #:artifacts artifact ...)
+       #'(define name (make-character hp def atk em critr critd na skill burst (list artifact ...)))])))
+
+(define-syntax define-team-lineup
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ name (character ...))
+       #'(define name (list character ...))])))
 
 (define-attack-sequence attack-chain
   ([(atk 10) 0.5]

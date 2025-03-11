@@ -1,22 +1,40 @@
 #lang racket
 (require (for-syntax syntax/parse))
+(require syntax-spec-v3 (for-syntax syntax/parse syntax/to-string))
 
 ;; define basic stats + calculations
 (define-struct character [hp atk def critr critd em attacks weapon artifacts])
 (define-struct state-handler [character active-buffs time])
 (define-struct weapon [damage substat buffs])
 (define-struct skill [cd duration buffs])
-(define-struct attack [attr percent duration])
+(define-struct attack [attr duration])
 (define-struct artifact [set-name main-stat substats])
-(define-struct stat [attr percent])
-(define-struct triggered-buff [effect trigger limit target duration])
-(define-struct unconditional-buff [effect target])
+(define-struct triggered-buff [effect trigger limit party-wide duration])
+(define-struct unconditional-buff [effect party-wide])
+(define-struct attack-sequence [normals charged plunge])
+(define-struct attribute [attr-func value])
+
+(define-syntax parse-attribute
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ (~datum hp) percent:number)
+       #'(make-attribute (lambda (x) (character-hp x)) percent)]
+      [(_ (~datum atk) percent:number)
+       #'(make-attribute (lambda (x) (character-atk x)) percent)]
+      [(_ (~datum def) percent:number)
+       #'(make-attribute (lambda (x) (character-def x)) percent)]
+      [(_ (~datum critr) percent:number)
+       #'(make-attribute (lambda (x) (character-critr x)) percent)]
+      [(_ (~datum critd) percent:number)
+       #'(make-attribute (lambda (x) (character-critd x)) percent)]
+      [(_ (~datum em) percent:number)
+       #'(make-attribute (lambda (x) (character-em x)) percent)])))
 
 (define-syntax define-weapon
   (lambda (stx)
     (syntax-parse stx
       [(_ name:id damage:number (attr percent) buffs ...)
-       #'(define name (make-weapon damage (make-stat attr percent) (list (parse-buff buffs) ...)))])))
+       #'(define name (make-weapon damage (parse-attribute attr percent) (list (parse-buff buffs) ...)))])))
 
 (define-syntax define-skill
   (lambda (stx)
@@ -31,19 +49,23 @@
                                    #:effect (attr percent)
                                    #:trigger trigger
                                    #:limit limit:number
-                                   #:target target
+                                   #:party-wide party-wide:boolean
                                    #:duration duration]))
-       #'(make-triggered-buff (make-stat attr percent) trigger limit target duration)]
+       #'(make-triggered-buff (parse-attribute attr percent) trigger limit party-wide duration)]
       [(_ ((~datum unconditional-buff) [name:id
-                                   #:effect (attr percent)
-                                   #:target target]))
-       #'(make-unconditional-buff (make-stat attr percent) target)])))
+                                        #:effect (attr percent)
+                                        #:party-wide party-wide:boolean]))
+       #'(make-unconditional-buff (parse-attribute attr percent) party-wide)])))
 
 (define-syntax define-attack-sequence
   (lambda (stx)
     (syntax-parse stx
-      [(_ name:id ([(attr:id percent:number) duration:number]) ...)
-       #'(define name (list (make-attack attr percent duration) ...))])))
+      [(_ name:id ([(attr percent:number) duration:number] ...
+                   #:charged  [(attr2 percent2:number) duration2:number]
+                   #:plunging [(attr3 percent3:number) duration3:number]))
+       #'(define name (make-attack-sequence (list (make-attack (parse-attribute attr percent) duration) ...)
+                                            (make-attack (parse-attribute attr2 percent2) duration2)
+                                            (make-attack (parse-attribute attr3 percent3) duration3)))])))
 
 (define-syntax define-artifact
   (lambda (stx)
@@ -51,22 +73,30 @@
       [(_ name:id set-name:string (mattr mstat) (sattr sstat) ...)
        #'(define name (make-artifact set-name (make-stat mattr mstat) (make-stat sattr sstat) ...))])))
 
+(define-attack-sequence attack-chain
+  ([(atk 10) 0.5]
+   [(atk 25) 0.2]
+   [(atk 125) 0.8]
+   [(atk 250) 1.5]
+   #:charged [(hp 5) 3.5]
+   #:plunging [(hp 10) 3.5]))
+
 
 (define-weapon test-weapon
   450 ;; base attack stat
-  ('critr 24.1) ;; substat (crit rate)
+  (critr 24.1) ;; substat (crit rate)
   (triggered-buff
    [dmgup
-   #:effect ('atk% 20.0) ;; increase atk by 20%
+   #:effect (atk 20.0) ;; increase atk by 20%
    #:trigger 'normal-attack
    #:limit 1
-   #:target 'self  
+   #:party-wide #f
    #:duration 10.0])
-  
+
   (unconditional-buff
    [crit-up
-   #:effect ('critd 20) ;; increase crit damage by 20%
-   #:target 'self]) 
+   #:effect (critd 20) ;; increase crit damage by 20%
+   #:party-wide #f])
 )
 
 

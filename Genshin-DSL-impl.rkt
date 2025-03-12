@@ -187,15 +187,9 @@
 ;; note : duration is optional
 (define-skill all-attack-up
   25.0
-  ; 2.0
-  ; FIX THIS:
   #:attr (atk% 125)
   #:duration 0.1
   #:type pyro
-  #;(damage
-     [(atk 125)
-      #:duration 0.1
-      #:type pyro])
   (applied-buff
    [skill-atkup
     #:effect (atk 125)
@@ -266,5 +260,5 @@
 
 (define-team-lineup lone-member (test-char))
 
-(calculate-rotation-damage lone-member dummy (N N N C E N ND N ND Q N ND E))
+(calculate-rotation-damage lone-member dummy (N N N N N N N N N N N))
 

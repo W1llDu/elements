@@ -73,14 +73,14 @@
 
 (define (calc-duration attacks attack nc)
   ; n/c/e/q/nj/nd/cj/cd/ep/jp
-  (cond [(symbol=? 'N attack) (attack-duration (list-ref (attack-sequence-normals attacks) nc))]
+  (cond [(symbol=? 'N attack) (attack-duration (list-ref (attack-sequence-normals attacks) (sub1 nc)))]
         ))
 
 (define (generate-dmg-info char enemy attack nc)
   (let ([stats (calc-total-stats char)])
     ; un-lambda the attrs (should be runtime job)
     ; n/c/e/q/nj/nd/cj/cd/ep/jp
-    (cond [(symbol=? 'N attack) (make-damage-info (calc-attr (attack-attr (list-ref (attack-sequence-normals (character-attacks char)) nc)) stats)
+    (cond [(symbol=? 'N attack) (make-damage-info (calc-attr (attack-attr (list-ref (attack-sequence-normals (character-attacks char)) (sub1 nc))) stats)
                                                   ; should be in terms of total atk, not base
                                                   1 ; base-dmg-mult
                                                   0 ; base-add
@@ -95,7 +95,17 @@
 (define (calc-attr attr stats)
   (cond
     ; must be %?
-    [(symbol=? (attribute-attr attr) 'atk%) (* (attribute-modifier attr) (stat-info-atk stats))]
+    [(symbol=? (attribute-attr attr) 'atk) (calc-modifier (attribute-modifier attr) stats)]
+    ))
+
+(define (calc-modifier modifier stats)
+  (if (number? modifier)
+      modifier
+      (* (percent-p modifier) (lookup stats (percent-attr modifier)))))
+
+(define (lookup stats attr)
+  (cond
+    [(symbol=? attr 'atk%) (stat-info-atk stats)]
     ))
 
 ; do a tree traversal (abstract out, use symbols?) flat incr vs incr by other amt (atk (def% 50)) increases atk by 50% of base def

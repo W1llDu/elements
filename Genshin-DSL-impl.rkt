@@ -117,6 +117,8 @@
 
 ;; EXAMPLE
 
+;; wrap this
+
 (define-attack-sequence attack-chain
   ([(atk 10) 0.5]
    [(atk 25) 0.2]
@@ -205,3 +207,18 @@
   #:artifacts test-feather
               test-goblet
   )
+
+; TODO
+
+#|
+(define-enemy dummy
+  #|#:type Pyro|#
+  #:def 1000
+  #:res (50 10 10 10 10 10 10 -20)
+  #:red 5
+  )
+
+(define-team-lineup lone-member (test-char))
+
+(calculate-rotation-damage lone-member dummy (N N N C E N ND N ND Q N ND E))
+|#

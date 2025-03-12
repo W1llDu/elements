@@ -1,21 +1,11 @@
 #lang racket
 (require (for-syntax syntax/parse))
 (require syntax-spec-v3 (for-syntax syntax/parse syntax/to-string))
+(require "runtime.rkt")
 
 ;; define basic stats + calculations
-(define-struct character [hp atk def critr critd em attacks weapon skill burst artifacts])
-(define-struct state-handler [character active-buffs time])
-(define-struct weapon [damage substat buffs])
-(define-struct skill [cd duration buffs])
-(define-struct attack [attr duration])
-(define-struct artifact [set-name main-stat substats])
-(define-struct triggered-buff [effect trigger limit party-wide duration])
-(define-struct unconditional-buff [effect party-wide])
-(define-struct applied-buff [effect limit party-wide duration])
-(define-struct attack-sequence [normals charged plunge])
-(define-struct attribute [attr-func value])
-(define-struct damage [attr duration elem-type])
 
+; un-lambda the attrs (should be runtime job)
 (define-syntax parse-attribute
   (lambda (stx)
     (syntax-parse stx
@@ -214,7 +204,14 @@
 (define-enemy dummy
   #|#:type Pyro|#
   #:def 1000
-  #:res (50 10 10 10 10 10 10 -20)
+  #:res (#:pyro 50
+         #:hydro 10
+         #:electro 10
+         #:cryo 10
+         #:geo 10
+         #:anemo 10
+         #:dendro 10
+         #:physical -20)
   #:red 5
   )
 

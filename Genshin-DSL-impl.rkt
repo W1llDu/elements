@@ -2,11 +2,17 @@
 (require (for-syntax syntax/parse))
 (require syntax-spec-v3 (for-syntax syntax/parse syntax/to-string))
 (require "runtime.rkt")
+(require racket/hash)
 
+#|
 (syntax-spec
 
  (extension-class genshin-macro #:binding-space genshin)
 
+ (host-interface/definitions
+  (genshin-calc exprs:expr ...)
+  #'(compile-calc exprs ...))
+ #|
  (host-interface/definitions
   (define-weapon name:id damage:number attr:attribute buffs:buff ...)
   #'(compile-define-weapon name damage attr buffs ...))
@@ -45,8 +51,83 @@
                                        #:duration duration:number])
               (unconditional-buff [name:id #:effect attr:attribute
                                            #:party-wide party-wide:boolean]))
-
+ |#
  )
+|#
+
+(define-syntax genshin-calc
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ exprs ...)
+       (check-types (attribute exprs))
+       (check-unique-names (attribute exprs))
+       #'(begin exprs ...)])))
+#|
+   #:attacks
+   #:weapon
+   #:skill/#:burst
+   #:artifacts
+char
+enemy
+|#
+(begin-for-syntax
+  (require racket/list)
+  (define (check-types exprs)
+    ((λ (result) (if (boolean? result)
+                     (raise-syntax-error 'calc "improper type given somewhere")
+                     (if (equal? (length (apply append (hash-values result)))
+                                      (length (remove-duplicates (apply append (hash-values result)))))
+                         (void)
+                         (raise-syntax-error 'calc "a duplicate name was found"))))
+       (foldl (λ (expr result) (if (hash? result)
+                                   (syntax-parse expr
+                                     [((~datum define-attack-sequence) name rest ...)
+                                      (hash-set result 'attacks (cons (syntax->datum #'name) (hash-ref result 'attacks)))]
+                                     [((~datum define-weapon) name rest ...)
+                                      (hash-set result 'weapons (cons (syntax->datum #'name) (hash-ref result 'weapons)))]
+                                     [((~datum define-skill) name rest ...)
+                                      (hash-set result 'skills (cons (syntax->datum #'name) (hash-ref result 'skills)))]
+                                     [((~datum define-artifact) name rest ...)
+                                      (hash-set result 'artifacts (cons (syntax->datum #'name) (hash-ref result 'artifacts)))]
+                                     [((~datum define-character) name _ _ _ _ _ _ _ _ _ _ _ _ _ attacks*:id _ weapon*:id _ skill*:id _ burst*:id _ artifacts* ...)
+                                      (if (and (member (syntax->datum #'attacks*) (hash-ref result 'attacks))
+                                               (member (syntax->datum #'weapon*) (hash-ref result 'weapons))
+                                               (member (syntax->datum #'skill*) (hash-ref result 'skills))
+                                               (member (syntax->datum #'burst*) (hash-ref result 'skills))
+                                               (andmap (λ (art) (member (syntax->datum art) (hash-ref result 'artifacts)))
+                                                       (attribute artifacts*)))
+                                          (hash-set result 'characters (cons (syntax->datum #'name) (hash-ref result 'characters)))
+                                          #f)]
+                                     [((~datum define-enemy) name rest ...)
+                                      (hash-set result 'enemies (cons (syntax->datum #'name) (hash-ref result 'enemies)))]
+                                     [((~datum define-team-lineup) name (chars ...))
+                                      (if (andmap (λ (char) (member (syntax->datum char) (hash-ref result 'characters)))
+                                                  (attribute chars))
+                                          (hash-set result 'teams (cons (syntax->datum #'name) (hash-ref result 'teams)))
+                                          #f)]
+                                     [((~datum calculate-rotation-damage) team* enemy* _)
+                                      (if (and (member (syntax->datum #'team*) (hash-ref result 'teams))
+                                               (member (syntax->datum #'enemy*) (hash-ref result 'enemies)))
+                                          result
+                                          #f)])
+                                   result))
+              (hash 'attacks (list)
+                    'weapons (list)
+                    'skills (list)
+                    'artifacts (list)
+                    'characters (list)
+                    'enemies (list)
+                    'teams (list))
+              exprs)))
+  (define (check-unique-names exprs)
+    ; TODO
+    (when #f
+      (raise-syntax-error 'calc "incorrect type")))
+  (define (check-artifact-overlap exprs)
+    ; TODO (optional)
+    (when #f
+      (raise-syntax-error 'calc "incorrect type")))
+  )
 
 (define-syntax parse-attribute
   (lambda (stx)
@@ -69,8 +150,9 @@
        #'(make-attribute 'em amount)]
       ; flat stat by another stat percent
       ; how to enforce that stat is hp/atk/def/em%?
-      [(_ (~datum hp) (stat percent:number)) #; (hp (atk% 20))
-                                             #'(make-attribute 'hp (make-percent 'stat percent))]
+      #; (hp (atk% 20))
+      [(_ (~datum hp) (stat percent:number))
+       #'(make-attribute 'hp (make-percent 'stat percent))]
       [(_ (~datum atk) (stat percent:number))
        #'(make-attribute 'atk (make-percent 'stat percent))]
       [(_ (~datum def) (stat percent:number))
@@ -86,7 +168,7 @@
        #'(make-attribute 'def (make-percent 'def% percent))]
       )))
 
-(define-syntax compile-define-weapon
+(define-syntax define-weapon
   (lambda (stx)
     (syntax-parse stx
       [(_ name:id atk:number (attr modifier) buffs ...)
@@ -119,26 +201,6 @@
                                   #:duration duration]))
        #'(make-applied-buff (parse-attribute attr percent) limit party-wide duration)])))
 
-#;(define-syntax parse-element
-    (lambda (stx)
-      (syntax-parse stx
-        [(_ (~datum pyro))
-         #''pyro]
-        [(_ (~datum cryo))
-         #''cryo]
-        [(_ (~datum electro))
-         #''electro]
-        [(_ (~datum hydro))
-         #''hydro]
-        [(_ (~datum geo))
-         #''geo]
-        [(_ (~datum anemo))
-         #''anemo]
-        [(_ (~datum dendro))
-         #''dendro]
-        [(_ (~datum physical))
-         #''physical])))
-
 (define-syntax define-attack-sequence
   (lambda (stx)
     (syntax-parse stx
@@ -159,8 +221,8 @@
   (lambda (stx)
     (syntax-parse stx
       [(_ name #:hp hp:number #:def def:number #:atk atk:number #:em em:number #:critr critr:number #:critd critd:number
-          #:normal-attacks na:id #:weapon weapon:id #:skill skill:id #:burst burst:id #:artifacts artifact ...)
-       #'(define name (make-character hp def atk em critr critd na weapon skill burst (list artifact ...)))])))
+          #:attacks attacks:id #:weapon weapon:id #:skill skill:id #:burst burst:id #:artifacts artifacts ...)
+       #'(define name (make-character hp def atk em critr critd attacks weapon skill burst (list artifacts ...)))])))
 
 (define-syntax define-enemy
   (lambda (stx)
@@ -194,109 +256,111 @@
 ;; EXAMPLE
 
 ;; wrap this
+(genshin-calc
 
-(define-attack-sequence attack-chain
-  ([(atk% 10) 0.5 physical]
-   [(atk% 25) 0.2 physical]
-   [(atk% 125) 0.8 physical]
-   [(atk% 250) 1.5 physical]
-   #:charged [(hp 5) 3.5 pyro]
-   #:plunging [(hp 10) 3.5 physical]))
-
-
-(define-weapon test-weapon
-  450 ;; base attack stat
-  (critr 24.1) ;; substat (crit rate)
-  (triggered-buff
-   [dmgup
-    #:effect (atk% 20.0) ;; increase atk by 20%
-    #:trigger 'normal-attack
-    #:limit 1
-    #:party-wide #f
-    #:duration 10.0])
-
-  (unconditional-buff
-   [crit-up
-    #:effect (critd 20) ;; increase crit damage by 20%
-    #:party-wide #f])
-  )
-
-;; note : duration is optional
-(define-skill all-attack-up
-  25.0
-  #:attr (atk% 125)
-  #:duration 0.1
-  #:type pyro
-  (applied-buff
-   [skill-atkup
-    #:effect (atk 125)
-    #:limit 1
-    #:party-wide #t
-    #:duration 10]) ;; this time applies to all members of a lineup
-  )
-
-(define-skill basic-slash
-  5.0 ;; cooldown
-  #:attr (atk% 25)
-  #:duration 1.0 ;; duration (where character cannot do anything else)
-  #:type pyro
-  (applied-buff
-   [skill-hpup
-    #:effect (hp 20)
-    #:limit 1
-    #:party-wide #f
-    #:duration 10.0]) ;; increase hp by 10% of atk, only applies to current character
-  )
-
-(define-artifact test-feather
-  "cool feather collection" ;; set name
-  (atk 325) ;; main stat
-  (atk 27) ;; substats
-  (em 42)
-  )
-
-(define-artifact test-goblet
-  "cool goblet collection" ;; set name
-  (critr 46.6) ;; main stat
-  (critd 16.2) ;; substats
-  (critr 3.0)
-  (def 128)
-  )
+ (define-attack-sequence attack-chain
+   ([(atk% 10) 0.5 physical]
+    [(atk% 25) 0.2 physical]
+    [(atk% 125) 0.8 physical]
+    [(atk% 250) 1.5 physical]
+    #:charged [(hp 5) 3.5 pyro]
+    #:plunging [(hp 10) 3.5 physical]))
 
 
-(define-character test-char
-  #:hp 12000 ;; base hp
-  #:def 500   ;; base def
-  #:atk 900   ;; base atk
-  #:em 20    ;; base em
-  #:critr 5     ;; base crit rate
-  #:critd 50    ;; base crit damage
-  #:normal-attacks attack-chain
-  #:weapon test-weapon ;; weapon
-  #:skill basic-slash ;; skill
-  #:burst all-attack-up ;; burst
-  #:artifacts test-feather
-  test-goblet
-  )
+ (define-weapon test-weapon
+   450 ;; base attack stat
+   (critr 24.1) ;; substat (crit rate)
+   (triggered-buff
+    [dmgup
+     #:effect (atk% 20.0) ;; increase atk by 20%
+     #:trigger 'normal-attack
+     #:limit 1
+     #:party-wide #f
+     #:duration 10.0])
 
-(define-enemy dummy
-  #|#:type Pyro|# ; for reactions
-  #:def 1000
-  #:res (#:pyro 50
-         #:hydro 10
-         #:electro 10
-         #:cryo 10
-         #:geo 10
-         #:anemo 10
-         #:dendro 10
-         #:physical -20)
-  #:reduction 5
-  )
+   (unconditional-buff
+    [crit-up
+     #:effect (critd 20) ;; increase crit damage by 20%
+     #:party-wide #f])
+   )
+
+ ;; note : duration is optional
+ (define-skill all-attack-up
+   25.0
+   #:attr (atk% 125)
+   #:duration 0.1
+   #:type pyro
+   (applied-buff
+    [skill-atkup
+     #:effect (atk 125)
+     #:limit 1
+     #:party-wide #t
+     #:duration 10]) ;; this time applies to all members of a lineup
+   )
+
+ (define-skill basic-slash
+   5.0 ;; cooldown
+   #:attr (atk% 25)
+   #:duration 1.0 ;; duration (where character cannot do anything else)
+   #:type pyro
+   (applied-buff
+    [skill-hpup
+     #:effect (hp 20)
+     #:limit 1
+     #:party-wide #f
+     #:duration 10.0]) ;; increase hp by 10% of atk, only applies to current character
+   )
+
+ (define-artifact test-feather
+   "cool feather collection" ;; set name
+   (atk 325) ;; main stat
+   (atk 27) ;; substats
+   (em 42)
+   )
+
+ (define-artifact test-goblet
+   "cool goblet collection" ;; set name
+   (critr 46.6) ;; main stat
+   (critd 16.2) ;; substats
+   (critr 3.0)
+   (def 128)
+   )
+
+
+ (define-character test-char
+   #:hp 12000 ;; base hp
+   #:def 500   ;; base def
+   #:atk 900   ;; base atk
+   #:em 20    ;; base em
+   #:critr 5     ;; base crit rate
+   #:critd 50    ;; base crit damage
+   #:attacks attack-chain
+   #:weapon test-weapon ;; weapon
+   #:skill basic-slash ;; skill
+   #:burst all-attack-up ;; burst
+   #:artifacts test-feather
+   test-goblet
+   )
+
+ (define-enemy dummy
+   #|#:type Pyro|# ; for reactions
+   #:def 1000
+   #:res (#:pyro 50
+          #:hydro 10
+          #:electro 10
+          #:cryo 10
+          #:geo 10
+          #:anemo 10
+          #:dendro 10
+          #:physical -20)
+   #:reduction 5
+   )
 
 
 
-(define-team-lineup lone-member (test-char))
+ (define-team-lineup lone-member (test-char))
 
-(calculate-rotation-damage lone-member dummy (N N N N N N N N N N N N))
-#;(calc-dmg lone-member dummy '(N N N N N N N N N N N N))
+ (calculate-rotation-damage lone-member dummy (N N N N N N N N N N N N))
+ #;(calc-dmg lone-member dummy '(N N N N N N N N N N N N))
 
+ )

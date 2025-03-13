@@ -32,31 +32,50 @@
 #;(define-struct damage [attr duration elem-type])
 
 ; internal
-(define-struct stat-info [hp atk def em critr critd])
+(define-struct flat-char [hp atk def critr critd em attacks skill burst unconditional-buffs trigger-buffs])
+(define-struct stat-info [hp atk def critr critd em])
 (define-struct damage-info [base-dmg base-dmg-mult base-add
                                      dmg-mult
                                      def-mult
                                      res
                                      amp-mult
-                                     crit-rate
-                                     crit-dmg])
+                                     critr
+                                     critd])
 ; base-dmg-mult: talent/constellation
 ; base-add: talent/constellation/weapon/artifact (increase by scaling amount (def% 56))
 
 ; final output: dmg, time, dmg/s
 
 (define (calc-dmg team enemy attack-string)
-  (calc-dmg/acc team enemy attack-string 1 0 0))
+  ; pull out party-wide uncond buffs into active-buffs
+  (calc-dmg/acc (map flatten-char team) enemy attack-string 1 empty 0 0))
 
-(define (calc-dmg/acc team enemy attack-string nc dmg time) ; more acc args like buffs (later)
+(define (flatten-char char)
+  (make-flat-char (character-hp char)
+                  (+ (character-atk char) (weapon-atk (character-weapon char)))
+                  (character-def char)
+                  (character-critr char)
+                  (character-critd char)
+                  (character-em char)
+                  (character-attacks char)
+                  (character-skill char)
+                  (character-burst char)
+                  empty #;(append weapon-uncond-buffs artifact-uncond-buff)
+                  empty #;(append weapon-trigger-buffs artifact-trigger-buff)
+                  ))
+
+(define (calc-dmg/acc team enemy attack-string nc active-buffs dmg time) ; more acc args like buffs (later)
   (cond [(empty? attack-string) (list dmg time)]
         [(cons? attack-string) (cond [(symbol=? 'S (first attack-string)) (calc-dmg/acc (foldr cons (list (first team)) (rest team))
                                                                                         enemy
                                                                                         (rest attack-string)
-                                                                                        1
+                                                                                        active-buffs
+                                                                                        dmg
                                                                                         (+ time 1))]
+                                     ; apply buffs
+                                     ; attack is done, then buffs
                                      [else (let ([nc* (if (symbol=? 'N (first attack-string))
-                                                          (if (= nc (length (attack-sequence-normals (character-attacks (first team)))))
+                                                          (if (= nc (length (attack-sequence-normals (flat-char-attacks (first team)))))
                                                               1
                                                               (+ 1 nc))
                                                           1)])
@@ -64,12 +83,13 @@
                                                            enemy
                                                            (rest attack-string)
                                                            nc*
+                                                           active-buffs
                                                            (+ dmg
                                                               (calc-single-dmg (generate-dmg-info (first team)
                                                                                                   enemy
                                                                                                   (first attack-string)
                                                                                                   nc)))
-                                                           (+ time (calc-duration (character-attacks (first team)) (first attack-string) nc))))])]))
+                                                           (+ time (calc-duration (flat-char-attacks (first team)) (first attack-string) nc))))])]))
 
 (define (calc-duration attacks attack nc)
   ; n/c/e/q/nj/nd/cj/cd/ep/jp
@@ -80,13 +100,13 @@
   (let ([stats (calc-total-stats char)])
     ; un-lambda the attrs (should be runtime job)
     ; n/c/e/q/nj/nd/cj/cd/ep/jp
-    (cond [(symbol=? 'N attack) (make-damage-info (calc-attr (attack-attr (list-ref (attack-sequence-normals (character-attacks char)) (sub1 nc))) stats)
+    (cond [(symbol=? 'N attack) (make-damage-info (calc-attr (attack-attr (list-ref (attack-sequence-normals (flat-char-attacks char)) (sub1 nc))) stats)
                                                   ; should be in terms of total atk, not base
                                                   1 ; base-dmg-mult
                                                   0 ; base-add
                                                   1 ; dmg-mult
                                                   1 ; def-mult ; TODO
-                                                  0.5 ; actual enemy res, figure out attack attr
+                                                  0 ; actual enemy res, figure out attack attr
                                                   1 ; amp-mult (reaction)
                                                   (stat-info-critr stats)
                                                   (stat-info-critd stats))]
@@ -101,7 +121,7 @@
 (define (calc-modifier modifier stats)
   (if (number? modifier)
       modifier
-      (* (percent-p modifier) (lookup stats (percent-attr modifier)))))
+      (* (percent-p modifier) 0.01 (lookup stats (percent-attr modifier)))))
 
 (define (lookup stats attr)
   (cond
@@ -110,18 +130,19 @@
 
 ; do a tree traversal (abstract out, use symbols?) flat incr vs incr by other amt (atk (def% 50)) increases atk by 50% of base def
 (define (calc-total-stats char)
-  (make-stat-info (+ (* (character-hp char) ; base hp
+  ; remember to scale % to decimal
+  (make-stat-info (+ (* (flat-char-hp char) ; base hp
                         (+ 1 #;hp%))
                      #;flat-hp)
-                  (+ (* (+ (character-atk char) (weapon-atk (character-weapon char))) ; base atk
+                  (+ (* (flat-char-atk char) ; base atk
                         (+ 1 #;atk%))
                      #;flat-atk)
-                  (+ (* (character-def char) ; base def
+                  (+ (* (flat-char-def char) ; base def
                         (+ 1 #;def%))
                      #;flat-def)
-                  0 #;flat-em-sum
-                  5 #;cr-sum
-                  50 #;cd-sum))
+                  100 #;cr-sum
+                  100 #;cd-sum
+                  0 #;flat-em-sum))
 
 (define (calc-single-dmg dmg)
   (* (+ (* (damage-info-base-dmg dmg) (damage-info-base-dmg-mult dmg)) (damage-info-base-add dmg))
@@ -129,7 +150,7 @@
      (damage-info-def-mult dmg)
      (calc-res (damage-info-res dmg))
      (damage-info-amp-mult dmg)
-     (calc-crit (damage-info-amp-mult dmg) (damage-info-amp-mult dmg))))
+     (calc-crit (damage-info-critr dmg) (damage-info-critd dmg))))
 
 (define (calc-res res)
   (cond [(< res 0) (- 1 (/ res 2))]
@@ -137,6 +158,6 @@
         [else (- 1 res)]))
 
 (define (calc-crit crit-rate crit-dmg)
-  (if (< (random) crit-rate)
-      crit-dmg
-      1))
+  (+ (- 1 (/ crit-rate 100))
+     (* (/ crit-rate 100)
+        (+ 1 (/ crit-dmg 100)))))

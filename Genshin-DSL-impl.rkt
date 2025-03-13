@@ -3,10 +3,58 @@
 (require syntax-spec-v3 (for-syntax syntax/parse syntax/to-string))
 (require "runtime.rkt")
 
+(syntax-spec
+
+ (extension-class genshin-macro #:binding-space genshin)
+
+ (host-interface/definitions
+  (define-weapon name:id damage:number attr:attribute buffs:buff ...)
+  #'(compile-define-weapon name damage attr buffs ...))
+
+ (nonterminal stat
+              hp
+              atk
+              def
+              em
+              critr
+              critd
+              hp%
+              atk%
+              def%)
+ 
+ #;(nonterminal stat%
+                hp%
+                atk%
+                def%)
+
+ (nonterminal attribute
+              (attr:stat mod:modifier)
+              #;(attr:stat% percent:number))
+
+ (nonterminal modifier
+              flat:number
+              (attr:stat percent:number)
+              #;(attr:stat% percent:number))
+
+ (nonterminal buff
+              #:binding-space genshin
+              (triggered-buff [name:id #:effect attr:attribute
+                                       #:trigger trigger:racket-expr
+                                       #:limit limit:number
+                                       #:party-wide party-wide:boolean
+                                       #:duration duration:number])
+              (unconditional-buff [name:id #:effect attr:attribute
+                                           #:party-wide party-wide:boolean]))
+
+ )
+
 (define-syntax parse-attribute
   (lambda (stx)
     (syntax-parse stx
       ; flat stat
+      #;[(_ stat amount:number)
+         #'(make-attribute 'stat amount)]
+      
       [(_ (~datum hp) amount:number)
        #'(make-attribute 'hp amount)]
       [(_ (~datum atk) amount:number)
@@ -19,24 +67,17 @@
        #'(make-attribute 'critd amount)]
       [(_ (~datum em) amount:number)
        #'(make-attribute 'em amount)]
-      ; stat percent
-      [(_ (~datum hp) amount:number)
-       #'(make-attribute 'hp amount)]
-      [(_ (~datum atk) amount:number)
-       #'(make-attribute 'atk amount)]
-      [(_ (~datum def) amount:number)
-       #'(make-attribute 'def amount)]
       ; flat stat by another stat percent
       ; how to enforce that stat is hp/atk/def/em%?
-      [(_ (~datum hp) (stat percent:number))
-       #'(make-attribute 'hp (make-percent 'stat percent))]
+      [(_ (~datum hp) (stat percent:number)) #; (hp (atk% 20))
+                                             #'(make-attribute 'hp (make-percent 'stat percent))]
       [(_ (~datum atk) (stat percent:number))
        #'(make-attribute 'atk (make-percent 'stat percent))]
       [(_ (~datum def) (stat percent:number))
        #'(make-attribute 'def (make-percent 'stat percent))]
       [(_ (~datum em) (stat percent:number))
        #'(make-attribute 'em (make-percent 'stat percent))]
-      ; stat by stat percent (shortcut)
+      ; stat by stat percent (shortcut)  (hp% 20) = (hp (hp% 20))
       [(_ (~datum hp%) percent:number)
        #'(make-attribute 'hp (make-percent 'hp% percent))]
       [(_ (~datum atk%) percent:number)
@@ -45,7 +86,7 @@
        #'(make-attribute 'def (make-percent 'def% percent))]
       )))
 
-(define-syntax define-weapon
+(define-syntax compile-define-weapon
   (lambda (stx)
     (syntax-parse stx
       [(_ name:id atk:number (attr modifier) buffs ...)
@@ -76,31 +117,27 @@
                                   #:limit limit:number
                                   #:party-wide party-wide:boolean
                                   #:duration duration]))
-       #'(make-applied-buff (parse-attribute attr percent) limit party-wide duration)]
-      #;[(_ ((~datum damage) [(attr percent)
-                              #:duration duration:number
-                              #:type elem-type]))
-         #'(make-damage (parse-attribute attr percent) duration (parse-element elem-type))])))
+       #'(make-applied-buff (parse-attribute attr percent) limit party-wide duration)])))
 
-(define-syntax parse-element
-  (lambda (stx)
-    (syntax-parse stx
-      [(_ (~datum pyro))
-       #''pyro]
-      [(_ (~datum cryo))
-       #''cryo]
-      [(_ (~datum electro))
-       #''electro]
-      [(_ (~datum hydro))
-       #''hydro]
-      [(_ (~datum geo))
-       #''geo]
-      [(_ (~datum anemo))
-       #''anemo]
-      [(_ (~datum dendro))
-       #''dendro]
-      [(_ (~datum physical))
-       #''physical])))
+#;(define-syntax parse-element
+    (lambda (stx)
+      (syntax-parse stx
+        [(_ (~datum pyro))
+         #''pyro]
+        [(_ (~datum cryo))
+         #''cryo]
+        [(_ (~datum electro))
+         #''electro]
+        [(_ (~datum hydro))
+         #''hydro]
+        [(_ (~datum geo))
+         #''geo]
+        [(_ (~datum anemo))
+         #''anemo]
+        [(_ (~datum dendro))
+         #''dendro]
+        [(_ (~datum physical))
+         #''physical])))
 
 (define-syntax define-attack-sequence
   (lambda (stx)
@@ -260,5 +297,6 @@
 
 (define-team-lineup lone-member (test-char))
 
-(calculate-rotation-damage lone-member dummy (N N N N N N N N N N N))
+(calculate-rotation-damage lone-member dummy (N N N N N N N N N N N N))
+#;(calc-dmg lone-member dummy '(N N N N N N N N N N N N))
 

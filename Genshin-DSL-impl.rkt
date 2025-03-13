@@ -1,5 +1,10 @@
 #lang racket
 
+;; ELEMENTS
+;; “Extensive Language for the Efficient Monitoring of Effective No-nonsense Team-wide Statistics”
+;; (which includes damage)
+;; (Note: Not everything needs to be an acronym)
+
 (require (for-syntax syntax/parse))
 (require syntax-spec-v3 (for-syntax syntax/parse syntax/to-string))
 (require "runtime.rkt")

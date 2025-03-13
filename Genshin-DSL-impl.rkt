@@ -138,7 +138,6 @@ enemy
       ; flat stat
       #;[(_ stat amount:number)
          #'(make-attribute 'stat amount)]
-      
       [(_ (~datum hp) amount:number)
        #'(make-attribute 'hp amount)]
       [(_ (~datum atk) amount:number)
@@ -362,3 +361,87 @@ enemy
 
  (calculate-rotation-damage lone-member dummy (N N N N N N N N N N N N))
  )
+
+#|
+
+Example output: Compiled Code
+|#
+
+#;(begin
+
+    (define attack-chain (make-attack-sequence (list (make-attack (make-attribute 'atk% 10) 0.5 'physical)
+                                                     (make-attack (make-attribute 'atk% 25) 0.2 'physical)
+                                                     (make-attack (make-attribute 'atk% 125) 0.8 'physical)
+                                                     (make-attack (make-attribute 'atk% 250) 1.5 'physical))
+                                               (make-attack (make-attribute 'hp 5) 3.5 'pyro)
+                                               (make-attack (make-attribute 'hp 10) 3.5 'physical)))
+
+
+    (define test-weapon
+      (make-weapon 450 (make-attribute 'critr 24.1)
+                   (list (make-triggered-buff (make-attribute 'atk% 20) 'normal-attack 1 #f 10)
+                         (make-unconditional-buff (make-attribute 'critd 20) #f))))
+
+    (define all-attack-up
+      (make-skill 25 (make-attribute 'atk% 125) 0.1 'pyro
+                  (list (make-applied-buff (make-attribute 'atk 125) 1 #t 10))))
+
+    (define basic-slash
+      (make-skill 5 (make-attribute 'atk% 25) 1.0 'pyro
+                  (list (make-applied-buff (make-attribute 'hp 20) 1 #t 10))))
+
+    (define test-feather
+      (make-artifact "cool feather collection"
+                     (make-attribute 'atk 375) (list (make-attribute 'atk 27)
+                                                     (make-attribute 'em 42))))
+
+    (define test-goblet
+      (make-artifact "cool goblet collection"
+                     (make-attribute 'critr 46.6) (list (make-attribute 'critd 16.2)
+                                                        (make-attribute 'critr 3.0)
+                                                        (make-attribute 'def 128))))
+
+    (define test-char
+      (make-character 12000
+                      500
+                      900
+                      20
+                      5
+                      50
+                      attack-chain
+                      test-weapon
+                      basic-slash
+                      all-attack-up
+                      (list test-feather test-goblet)))
+
+    (define dummy
+      (make-enemy 1000 (make-resistances 50 10 10 10 10 10 10 -20) 5))
+
+    (define lone-member (list test-char))
+
+    (calc-dmg lone-member
+              dummy
+              (list 'N 'N 'N 'N 'N 'N 'N 'N 'N 'N 'N 'N))
+
+    )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

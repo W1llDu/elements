@@ -1,7 +1,15 @@
 #lang racket
 
 ;; ELEMENTS
-;; “Extensive Language for the Efficient Monitoring of Effective No-nonsense Team-wide Statistics”
+;; "Extensive
+;;  Language for the
+;;  Efficient
+;;  Monitoring of
+;;  Effective
+;;  Numerical
+;;  Team-wide
+;;  Statistics”
+;;  ...
 ;; (which includes damage)
 ;; (Note: Not everything needs to be an acronym)
 
@@ -22,28 +30,54 @@
   #'(compile-genshin-calc exprs ...))
  
  (host-interface/definitions
-  (define-weapon name:id damage:number attr:genshin-attribute buffs:buff ...)
-  #'(compile-define-weapon name damage attr buffs ...))
+  (define-weapon name:id
+    damage:number
+    attr:genshin-attribute
+    buffs:buff ...)
+  #'(compile-define-weapon
+     name
+     damage
+     attr
+     buffs ...))
 
  (host-interface/definitions
-  (define-skill name:id cd:number #:attr attr:genshin-attribute #:duration duration:number #:type type:element buffs:buff ...)
-  #'(compile-define-skill name cd #:attr attr #:duration duration #:type type buffs ...))
+  (define-skill name:id
+    cd:number
+    #:attr attr:genshin-attribute
+    #:duration duration:number
+    #:type type:element
+    buffs:buff ...)
+  #'(compile-define-skill
+     name
+     cd
+     #:attr attr
+     #:duration duration
+     #:type type
+     buffs ...))
 
  (host-interface/definitions
-  (define-attack-sequence name:id ([attr:genshin-attribute duration:number type:element] ...
-                                   #:charged  [attr2:genshin-attribute duration2:number type2:element]
-                                   #:plunging [attr3:genshin-attribute duration3:number type3:element]))
-  #'(compile-define-attack-sequence name ([attr duration type] ...
-                                          #:charged  [attr2 duration2 type2]
-                                          #:plunging [attr3 duration3 type3])))
+  (define-attack-sequence
+    name:id
+    ([attr:genshin-attribute duration:number type:element] ...
+     #:charged  [attr2:genshin-attribute duration2:number type2:element]
+     #:plunging [attr3:genshin-attribute duration3:number type3:element]))
+  #'(compile-define-attack-sequence
+     name ([attr duration type] ...
+           #:charged  [attr2 duration2 type2]
+           #:plunging [attr3 duration3 type3])))
  
-(host-interface/definitions
-  (define-artifact name:id set-name:string mattr:genshin-attribute sattr:genshin-attribute ...)
-  #'(compile-define-artifact name set-name mattr sattr ...))
+ (host-interface/definitions
+  (define-artifact
+    name:id
+    set-name:string
+    mattr:genshin-attribute
+    sattr:genshin-attribute ...)
+  #'(compile-define-artifact
+     name
+     set-name
+     mattr
+     sattr ...))
 
-
- 
- 
  (nonterminal stat
               hp
               atk
@@ -106,49 +140,116 @@ enemy
 |#
 (begin-for-syntax
   (require racket/list)
+
+  (define (check-character-syntax
+           result
+           name
+           attacks
+           weapon
+           skill
+           burst
+           artifacts
+           expr)
+    (define id 0)
+    (if (and (member (syntax->datum attacks) (hash-ref result 'attacks))
+             (set! id 1)
+             (member (syntax->datum weapon) (hash-ref result 'weapons))
+             (set! id 2)
+             (member (syntax->datum skill) (hash-ref result 'skills))
+             (set! id 3)
+             (member (syntax->datum burst) (hash-ref result 'skills))
+             (set! id 4)
+             (andmap (λ (art)
+                       (and (member (syntax->datum art)
+                                    (hash-ref result 'artifacts))
+                            (set! id (add1 id))))
+                     artifacts)
+             (set! id 5))
+        (hash-set result 'characters
+                  (cons (syntax->datum name)
+                        (hash-ref result 'characters)))
+        (raise-syntax-error 'character
+                            "Incorrect data input for character"
+                            expr
+                            (list-ref (append (list attacks weapon skill burst)
+                                              artifacts) id))))
+
+  (define (check-team-syntax result chars name expr)
+    (define id 0)
+    (if (andmap (λ (char) (and (member (syntax->datum char)
+                                       (hash-ref result 'characters))
+                               (set! id (add1 id))))
+                chars)
+        (hash-set result 'teams (cons (syntax->datum name) (hash-ref result 'teams)))
+        (raise-syntax-error 'teams
+                            "Incorrect data input for team"
+                            expr
+                            (list-ref chars id))))
+
+  (define (check-rotation-syntax result team enemy expr)
+    (define id 0)
+    (if (and (member (syntax->datum team) (hash-ref result 'teams)) (set! id 1)
+             (member (syntax->datum enemy) (hash-ref result 'enemies)))
+        result
+        (raise-syntax-error 'calculate-rotation-damage
+                            "Incorrect data input for damage rotation"
+                            expr
+                            (list-ref (list team enemy) id))))
+  
   (define (check-types exprs)
     ((λ (result) (if (equal? (length (apply append (hash-values result)))
-                             (length (remove-duplicates (apply append (hash-values result)))))
+                             (length (remove-duplicates
+                                      (apply append
+                                             (hash-values result)))))
                      (void)
                      (raise-syntax-error 'calc "a duplicate name was found")))
      (foldl (λ (expr result) (if (hash? result)
                                  (syntax-parse expr
                                    [((~datum define-attack-sequence) name rest ...)
-                                    (hash-set result 'attacks (cons (syntax->datum #'name) (hash-ref result 'attacks)))]
+                                    (hash-set result
+                                              'attacks
+                                              (cons (syntax->datum #'name)
+                                                    (hash-ref result 'attacks)))]
                                    [((~datum define-weapon) name rest ...)
-                                    (hash-set result 'weapons (cons (syntax->datum #'name) (hash-ref result 'weapons)))]
+                                    (hash-set result
+                                              'weapons
+                                              (cons (syntax->datum #'name)
+                                                    (hash-ref result 'weapons)))]
                                    [((~datum define-skill) name rest ...)
-                                    (hash-set result 'skills (cons (syntax->datum #'name) (hash-ref result 'skills)))]
+                                    (hash-set result
+                                              'skills
+                                              (cons (syntax->datum #'name)
+                                                    (hash-ref result 'skills)))]
                                    [((~datum define-artifact) name rest ...)
-                                    (hash-set result 'artifacts (cons (syntax->datum #'name) (hash-ref result 'artifacts)))]
-                                   [((~datum define-character) name _ _ _ _ _ _ _ _ _ _ _ _ _ attacks*:id _ weapon*:id _ skill*:id _ burst*:id _ artifacts* ...)
-                                    (define id 0)
-                                    (if (and (member (syntax->datum #'attacks*) (hash-ref result 'attacks))
-                                             (set! id 1)
-                                             (member (syntax->datum #'weapon*) (hash-ref result 'weapons))
-                                             (set! id 2)
-                                             (member (syntax->datum #'skill*) (hash-ref result 'skills))
-                                             (set! id 3)
-                                             (member (syntax->datum #'burst*) (hash-ref result 'skills))
-                                             (set! id 4)
-                                             (andmap (λ (art) (and (member (syntax->datum art) (hash-ref result 'artifacts)) (set! id (add1 id))))
-                                                     (attribute artifacts*))
-                                             (set! id 5))
-                                        (hash-set result 'characters (cons (syntax->datum #'name) (hash-ref result 'characters)))
-                                        (raise-syntax-error 'character "improper type given here!!!" expr (list-ref (append (list #'attacks* #'weapon* #'skill* #'burst*)
-                                                                                                                            (attribute artifacts*)) id)))]
+                                    (hash-set result
+                                              'artifacts
+                                              (cons (syntax->datum #'name)
+                                                    (hash-ref result 'artifacts)))]
+                                   [((~datum define-character)
+                                     name _ _ _ _ _ _ _ _ _ _ _ _ _
+                                     attacks*:id _
+                                     weapon*:id _
+                                     skill*:id _
+                                     burst*:id _
+                                     artifacts* ...)
+                                    (check-character-syntax
+                                     result
+                                     #'name
+                                     #'attacks*
+                                     #'weapon*
+                                     #'skill*
+                                     #'burst*
+                                     (attribute artifacts*)
+                                     expr)]
                                    [((~datum define-enemy) name rest ...)
-                                    (hash-set result 'enemies (cons (syntax->datum #'name) (hash-ref result 'enemies)))]
+                                    (hash-set result
+                                              'enemies
+                                              (cons (syntax->datum #'name)
+                                                    (hash-ref result 'enemies)))]
                                    [((~datum define-team-lineup) name (chars ...))
-                                    (if (andmap (λ (char) (member (syntax->datum char) (hash-ref result 'characters)))
-                                                (attribute chars))
-                                        (hash-set result 'teams (cons (syntax->datum #'name) (hash-ref result 'teams)))
-                                        (raise-syntax-error 'teams "improper type given here!!!"))]
+                                    (check-team-syntax result (attribute chars) #'name expr)]
                                    [((~datum calculate-rotation-damage) team* enemy* _)
-                                    (if (and (member (syntax->datum #'team*) (hash-ref result 'teams))
-                                             (member (syntax->datum #'enemy*) (hash-ref result 'enemies)))
-                                        result
-                                        (raise-syntax-error 'calculate-rotation-damage "improper type given here!!!"))])
+                                    (check-rotation-syntax result #'team* #'enemy* expr)])
                                  result))
             (hash 'attacks (list)
                   'weapons (list)
@@ -460,21 +561,6 @@ Example output: Compiled Code
               (list 'N 'N 'N 'N 'N 'N 'N 'N 'N 'N 'N 'N))
 
     )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

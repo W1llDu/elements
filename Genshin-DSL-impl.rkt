@@ -33,16 +33,14 @@
   (define-attack-sequence name:id ([attr:genshin-attribute duration:number type:element] ...
                                    #:charged  [attr2:genshin-attribute duration2:number type2:element]
                                    #:plunging [attr3:genshin-attribute duration3:number type3:element]))
-  
   #'(compile-define-attack-sequence name ([attr duration type] ...
                                           #:charged  [attr2 duration2 type2]
                                           #:plunging [attr3 duration3 type3])))
+ 
+(host-interface/definitions
+  (define-artifact name:id set-name:string mattr:genshin-attribute sattr:genshin-attribute ...)
+  #'(compile-define-artifact name set-name mattr sattr ...))
 
- #|(define-syntax define-artifact
-  (lambda (stx)
-    (syntax-parse stx
-      [(_ name:id set-name:string (mattr mstat) (sattr sstat) ...)
-       #'(define name (make-artifact set-name (parse-attribute mattr mstat) (list (parse-attribute sattr sstat) ...)))])))|#
 
  
  
@@ -251,7 +249,7 @@ enemy
                                             (make-attack (parse-attribute attr2 percent2) duration2 'type2)
                                             (make-attack (parse-attribute attr3 percent3) duration3 'type3)))])))
 
-(define-syntax define-artifact
+(define-syntax compile-define-artifact
   (lambda (stx)
     (syntax-parse stx
       [(_ name:id set-name:string (mattr mstat) (sattr sstat) ...)
@@ -260,14 +258,14 @@ enemy
 (define-syntax define-character
   (lambda (stx)
     (syntax-parse stx
-      [(_ name #:hp hp:number #:def def:number #:atk atk:number #:em em:number #:critr critr:number #:critd critd:number
-          #:attacks attacks:id #:weapon weapon:id #:skill skill:id #:burst burst:id #:artifacts artifacts ...)
+      [(_ name:id #:hp hp:number #:def def:number #:atk atk:number #:em em:number #:critr critr:number #:critd critd:number
+          #:attacks attacks:id #:weapon weapon:id #:skill skill:id #:burst burst:id #:artifacts artifacts:id ...)
        #'(define name (make-character hp def atk em critr critd attacks weapon skill burst (list artifacts ...)))])))
 
 (define-syntax define-enemy
   (lambda (stx)
     (syntax-parse stx
-      [(_ name #:def def:number
+      [(_ name:id #:def def:number
           #:res (#:pyro pyro:number
                  #:hydro hydro:number
                  #:electro electro:number
@@ -282,13 +280,13 @@ enemy
 (define-syntax define-team-lineup
   (lambda (stx)
     (syntax-parse stx
-      [(_ name (chars ...))
+      [(_ name:id (chars:id ...))
        #'(define name (list chars ...))])))
 
 (define-syntax calculate-rotation-damage
   (lambda (stx)
     (syntax-parse stx
-      [(_ lineup enemy (attack-string ...))
+      [(_ lineup:id enemy:id (attack-string ...))
        #'(calc-dmg lineup enemy (list 'attack-string ...))])))
 
 

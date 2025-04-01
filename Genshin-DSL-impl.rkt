@@ -88,6 +88,14 @@
               hp%
               atk%
               def%)
+ 
+ (nonterminal attack-key
+              N
+              C
+              E
+              Q
+              ND
+              Swap Int:integer)
 
  (nonterminal element
               pyro
@@ -116,6 +124,14 @@
                                      #:limit limit:number
                                      #:party-wide party-wide:boolean
                                      #:duration duration:number]))
+
+ (host-interface/expression
+  (calculate-rotation-damage lineup:id enemy:id (attk:attack-key ...))
+  #'(compile-calculate-rotation-damage
+     lineup
+     enemy
+     (attk ...)))
+
  )
 
 (define-syntax compile-genshin-calc
@@ -421,7 +437,7 @@ enemy
       [(_ name:id (chars:id ...))
        #'(define name (list chars ...))])))
 
-(define-syntax calculate-rotation-damage
+(define-syntax compile-calculate-rotation-damage
   (lambda (stx)
     (syntax-parse stx
       [(_ lineup:id enemy:id (attack-string ...))

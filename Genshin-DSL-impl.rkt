@@ -100,11 +100,8 @@
               physical)
 
  (nonterminal genshin-attribute
-              (attr:stat mod:modifier))
-
- (nonterminal modifier
-              flat:number
-              (attr:stat percent:number))
+              (attr:stat flat:number)
+              (attr:stat (sattr:stat percent:number)))
 
  (nonterminal buff
               #:binding-space genshin
@@ -119,8 +116,6 @@
                                      #:limit limit:number
                                      #:party-wide party-wide:boolean
                                      #:duration duration:number]))
- 
- 
  )
 
 (define-syntax compile-genshin-calc
@@ -203,54 +198,57 @@ enemy
                                              (hash-values result)))))
                      (void)
                      (raise-syntax-error 'calc "a duplicate name was found")))
-     (foldl (λ (expr result) (if (hash? result)
-                                 (syntax-parse expr
-                                   [((~datum define-attack-sequence) name rest ...)
-                                    (hash-set result
-                                              'attacks
-                                              (cons (syntax->datum #'name)
-                                                    (hash-ref result 'attacks)))]
-                                   [((~datum define-weapon) name rest ...)
-                                    (hash-set result
-                                              'weapons
-                                              (cons (syntax->datum #'name)
-                                                    (hash-ref result 'weapons)))]
-                                   [((~datum define-skill) name rest ...)
-                                    (hash-set result
-                                              'skills
-                                              (cons (syntax->datum #'name)
-                                                    (hash-ref result 'skills)))]
-                                   [((~datum define-artifact) name rest ...)
-                                    (hash-set result
-                                              'artifacts
-                                              (cons (syntax->datum #'name)
-                                                    (hash-ref result 'artifacts)))]
-                                   [((~datum define-character)
-                                     name _ _ _ _ _ _ _ _ _ _ _ _ _
-                                     attacks*:id _
-                                     weapon*:id _
-                                     skill*:id _
-                                     burst*:id _
-                                     artifacts* ...)
-                                    (check-character-syntax
-                                     result
-                                     #'name
-                                     #'attacks*
-                                     #'weapon*
-                                     #'skill*
-                                     #'burst*
-                                     (attribute artifacts*)
-                                     expr)]
-                                   [((~datum define-enemy) name rest ...)
-                                    (hash-set result
-                                              'enemies
-                                              (cons (syntax->datum #'name)
-                                                    (hash-ref result 'enemies)))]
-                                   [((~datum define-team-lineup) name (chars ...))
-                                    (check-team-syntax result (attribute chars) #'name expr)]
-                                   [((~datum calculate-rotation-damage) team* enemy* _)
-                                    (check-rotation-syntax result #'team* #'enemy* expr)])
-                                 result))
+     (foldl (λ (expr result)
+              (if (hash? result)
+                  (syntax-parse expr
+                    [((~datum define-attack-sequence) name rest ...)
+                     (hash-set result
+                               'attacks
+                               (cons (syntax->datum #'name)
+                                     (hash-ref result 'attacks)))]
+                    [((~datum define-weapon) name rest ...)
+                     (hash-set result
+                               'weapons
+                               (cons (syntax->datum #'name)
+                                     (hash-ref result 'weapons)))]
+                    [((~datum define-skill) name rest ...)
+                     (hash-set result
+                               'skills
+                               (cons (syntax->datum #'name)
+                                     (hash-ref result 'skills)))]
+                    [((~datum define-artifact) name rest ...)
+                     (hash-set result
+                               'artifacts
+                               (cons (syntax->datum #'name)
+                                     (hash-ref result 'artifacts)))]
+                    [((~datum define-character)
+                      name _ _ _ _ _ _ _ _ _ _ _ _ _
+                      attacks*:id _
+                      weapon*:id _
+                      skill*:id _
+                      burst*:id _
+                      artifacts* ...)
+                     (check-character-syntax
+                      result
+                      #'name
+                      #'attacks*
+                      #'weapon*
+                      #'skill*
+                      #'burst*
+                      (attribute artifacts*)
+                      expr)]
+                    [((~datum define-enemy) name rest ...)
+                     (hash-set result
+                               'enemies
+                               (cons (syntax->datum #'name)
+                                     (hash-ref result 'enemies)))]
+                    [((~datum define-team-lineup) name (chars ...))
+                     (check-team-syntax result
+                                        (attribute chars)
+                                        #'name expr)]
+                    [((~datum calculate-rotation-damage) team* enemy* _)
+                     (check-rotation-syntax result #'team* #'enemy* expr)])
+                  result))
             (hash 'attacks (list)
                   'weapons (list)
                   'skills (list)
@@ -259,6 +257,7 @@ enemy
                   'enemies (list)
                   'teams (list))
             exprs)))
+  
   (define (check-unique-names exprs)
     ; TODO
     (when #f
@@ -311,13 +310,22 @@ enemy
   (lambda (stx)
     (syntax-parse stx
       [(_ name:id atk:number (attr modifier) buffs ...)
-       #'(define name (make-weapon atk (parse-attribute attr modifier) (list (parse-buff buffs) ...)))])))
+       #'(define name (make-weapon atk
+                                   (parse-attribute attr modifier)
+                                   (list (parse-buff buffs) ...)))])))
 
 (define-syntax compile-define-skill
   (lambda (stx)
     (syntax-parse stx
-      [(_ name:id cd:number #:attr (attr modifier) #:duration duration:number #:type type buffs ...)
-       #'(define name (make-skill cd (parse-attribute attr modifier) duration 'type (list (parse-buff buffs) ...)))])))
+      [(_ name:id
+          cd:number
+          #:attr (attr modifier)
+          #:duration duration:number
+          #:type type buffs ...)
+       #'(define name (make-skill cd
+                                  (parse-attribute attr modifier)
+                                  duration 'type
+                                  (list (parse-buff buffs) ...)))])))
 
 (define-syntax parse-buff
   (lambda (stx)
@@ -328,7 +336,11 @@ enemy
                                     #:limit limit:number
                                     #:party-wide party-wide:boolean
                                     #:duration duration]))
-       #'(make-triggered-buff (parse-attribute attr percent) trigger limit party-wide duration)]
+       #'(make-triggered-buff (parse-attribute attr percent)
+                              trigger
+                              limit
+                              party-wide
+                              duration)]
       [(_ ((~datum unconditional-buff) [name:id
                                         #:effect (attr percent)
                                         #:party-wide party-wide:boolean]))
@@ -338,30 +350,51 @@ enemy
                                   #:limit limit:number
                                   #:party-wide party-wide:boolean
                                   #:duration duration]))
-       #'(make-applied-buff (parse-attribute attr percent) limit party-wide duration)])))
+       #'(make-applied-buff (parse-attribute attr percent)
+                            limit
+                            party-wide
+                            duration)])))
 
 (define-syntax compile-define-attack-sequence
   (lambda (stx)
     (syntax-parse stx
       [(_ name:id ([(attr percent:number) duration:number type] ...
-                   #:charged  [(attr2 percent2:number) duration2:number type2]
-                   #:plunging [(attr3 percent3:number) duration3:number type3]))
-       #'(define name (make-attack-sequence (list (make-attack (parse-attribute attr percent) duration 'type) ...)
-                                            (make-attack (parse-attribute attr2 percent2) duration2 'type2)
-                                            (make-attack (parse-attribute attr3 percent3) duration3 'type3)))])))
+                   #:charged  [(attr2 percent2:number)
+                               duration2:number
+                               type2]
+                   #:plunging [(attr3 percent3:number)
+                               duration3:number
+                               type3]))
+       #'(define name (make-attack-sequence
+                       (list (make-attack (parse-attribute attr percent)
+                                          duration
+                                          'type) ...)
+                       (make-attack (parse-attribute attr2 percent2)
+                                    duration2
+                                    'type2)
+                       (make-attack (parse-attribute attr3 percent3)
+                                    duration3
+                                    'type3)))])))
 
 (define-syntax compile-define-artifact
   (lambda (stx)
     (syntax-parse stx
       [(_ name:id set-name:string (mattr mstat) (sattr sstat) ...)
-       #'(define name (make-artifact set-name (parse-attribute mattr mstat) (list (parse-attribute sattr sstat) ...)))])))
+       #'(define name
+           (make-artifact set-name (parse-attribute mattr mstat)
+                          (list (parse-attribute sattr sstat) ...)))])))
 
 (define-syntax define-character
   (lambda (stx)
     (syntax-parse stx
-      [(_ name:id #:hp hp:number #:def def:number #:atk atk:number #:em em:number #:critr critr:number #:critd critd:number
-          #:attacks attacks:id #:weapon weapon:id #:skill skill:id #:burst burst:id #:artifacts artifacts:id ...)
-       #'(define name (make-character hp def atk em critr critd attacks weapon skill burst (list artifacts ...)))])))
+      [(_ name:id
+          #:hp hp:number #:def def:number #:atk atk:number
+          #:em em:number #:critr critr:number #:critd critd:number
+          #:attacks attacks:id #:weapon weapon:id #:skill skill:id
+          #:burst burst:id #:artifacts artifacts:id ...)
+       #'(define name (make-character hp def atk em critr critd
+                                      attacks weapon skill burst
+                                      (list artifacts ...)))])))
 
 (define-syntax define-enemy
   (lambda (stx)
@@ -376,7 +409,11 @@ enemy
                  #:dendro dendro:number
                  #:physical physical:number)
           #:reduction reduction:number)
-       #'(define name (make-enemy def (make-resistances pyro hydro electro cryo geo anemo dendro physical) reduction))])))
+       #'(define name
+           (make-enemy def
+                       (make-resistances pyro hydro electro cryo
+                                         geo anemo dendro physical)
+                       reduction))])))
 
 (define-syntax define-team-lineup
   (lambda (stx)
@@ -444,7 +481,8 @@ enemy
      #:effect (hp 20)
      #:limit 1
      #:party-wide #f
-     #:duration 10.0]) ;; increase hp by 10% of atk, only applies to current character
+     #:duration 10.0]) ;; increase hp by 10% of atk,
+                       ;; only applies to current character
    )
 
  (define-artifact test-feather
@@ -512,8 +550,7 @@ Example output: Compiled Code
                                                      (make-attack (make-attribute 'atk% 250) 1.5 'physical))
                                                (make-attack (make-attribute 'hp 5) 3.5 'pyro)
                                                (make-attack (make-attribute 'hp 10) 3.5 'physical)))
-
-
+    
     (define test-weapon
       (make-weapon 450 (make-attribute 'critr 24.1)
                    (list (make-triggered-buff (make-attribute 'atk% 20) 'normal-attack 1 #f 10)
@@ -531,13 +568,13 @@ Example output: Compiled Code
       (make-artifact "cool feather collection"
                      (make-attribute 'atk 375) (list (make-attribute 'atk 27)
                                                      (make-attribute 'em 42))))
-
+    
     (define test-goblet
       (make-artifact "cool goblet collection"
                      (make-attribute 'critr 46.6) (list (make-attribute 'critd 16.2)
                                                         (make-attribute 'critr 3.0)
                                                         (make-attribute 'def 128))))
-
+    
     (define test-char
       (make-character 12000
                       500

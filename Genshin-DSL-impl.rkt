@@ -12,19 +12,40 @@
 
 (provide (all-defined-out))
 
-#|
+
 (syntax-spec
 
  (extension-class genshin-macro #:binding-space genshin)
-
+ 
  (host-interface/definitions
   (genshin-calc exprs:expr ...)
-  #'(compile-calc exprs ...))
- #|
+  #'(compile-genshin-calc exprs ...))
+ 
  (host-interface/definitions
-  (define-weapon name:id damage:number attr:attribute buffs:buff ...)
+  (define-weapon name:id damage:number attr:genshin-attribute buffs:buff ...)
   #'(compile-define-weapon name damage attr buffs ...))
 
+ (host-interface/definitions
+  (define-skill name:id cd:number #:attr attr:genshin-attribute #:duration duration:number #:type type:element buffs:buff ...)
+  #'(compile-define-skill name cd #:attr attr #:duration duration #:type type buffs ...))
+
+ (host-interface/definitions
+  (define-attack-sequence name:id ([attr:genshin-attribute duration:number type:element] ...
+                                   #:charged  [attr2:genshin-attribute duration2:number type2:element]
+                                   #:plunging [attr3:genshin-attribute duration3:number type3:element]))
+  
+  #'(compile-define-attack-sequence name ([attr duration type] ...
+                                          #:charged  [attr2 duration2 type2]
+                                          #:plunging [attr3 duration3 type3])))
+
+ #|(define-syntax define-artifact
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ name:id set-name:string (mattr mstat) (sattr sstat) ...)
+       #'(define name (make-artifact set-name (parse-attribute mattr mstat) (list (parse-attribute sattr sstat) ...)))])))|#
+
+ 
+ 
  (nonterminal stat
               hp
               atk
@@ -35,35 +56,42 @@
               hp%
               atk%
               def%)
- 
- #;(nonterminal stat%
-                hp%
-                atk%
-                def%)
 
- (nonterminal attribute
-              (attr:stat mod:modifier)
-              #;(attr:stat% percent:number))
+ (nonterminal element
+              pyro
+              hydro
+              cryo
+              electro
+              gro
+              anemo
+              dendro
+              physical)
+
+ (nonterminal genshin-attribute
+              (attr:stat mod:modifier))
 
  (nonterminal modifier
               flat:number
-              (attr:stat percent:number)
-              #;(attr:stat% percent:number))
+              (attr:stat percent:number))
 
  (nonterminal buff
               #:binding-space genshin
-              (triggered-buff [name:id #:effect attr:attribute
+              (triggered-buff [name:id #:effect attr:genshin-attribute
                                        #:trigger trigger:racket-expr
                                        #:limit limit:number
                                        #:party-wide party-wide:boolean
                                        #:duration duration:number])
-              (unconditional-buff [name:id #:effect attr:attribute
-                                           #:party-wide party-wide:boolean]))
- |#
+              (unconditional-buff [name:id #:effect attr:genshin-attribute
+                                           #:party-wide party-wide:boolean])
+              (applied-buff [name:id #:effect attr:genshin-attribute
+                                     #:limit limit:number
+                                     #:party-wide party-wide:boolean
+                                     #:duration duration:number]))
+ 
+ 
  )
-|#
 
-(define-syntax genshin-calc
+(define-syntax compile-genshin-calc
   (lambda (stx)
     (syntax-parse stx
       [(_ exprs ...)
@@ -81,12 +109,10 @@ enemy
 (begin-for-syntax
   (require racket/list)
   (define (check-types exprs)
-    ((λ (result) (if (boolean? result)
-                     (raise-syntax-error 'calc "improper type given somewhere")
-                     (if (equal? (length (apply append (hash-values result)))
-                                 (length (remove-duplicates (apply append (hash-values result)))))
-                         (void)
-                         (raise-syntax-error 'calc "a duplicate name was found"))))
+    ((λ (result) (if (equal? (length (apply append (hash-values result)))
+                             (length (remove-duplicates (apply append (hash-values result)))))
+                     (void)
+                     (raise-syntax-error 'calc "a duplicate name was found")))
      (foldl (λ (expr result) (if (hash? result)
                                  (syntax-parse expr
                                    [((~datum define-attack-sequence) name rest ...)
@@ -98,26 +124,33 @@ enemy
                                    [((~datum define-artifact) name rest ...)
                                     (hash-set result 'artifacts (cons (syntax->datum #'name) (hash-ref result 'artifacts)))]
                                    [((~datum define-character) name _ _ _ _ _ _ _ _ _ _ _ _ _ attacks*:id _ weapon*:id _ skill*:id _ burst*:id _ artifacts* ...)
+                                    (define id 0)
                                     (if (and (member (syntax->datum #'attacks*) (hash-ref result 'attacks))
+                                             (set! id 1)
                                              (member (syntax->datum #'weapon*) (hash-ref result 'weapons))
+                                             (set! id 2)
                                              (member (syntax->datum #'skill*) (hash-ref result 'skills))
+                                             (set! id 3)
                                              (member (syntax->datum #'burst*) (hash-ref result 'skills))
-                                             (andmap (λ (art) (member (syntax->datum art) (hash-ref result 'artifacts)))
-                                                     (attribute artifacts*)))
+                                             (set! id 4)
+                                             (andmap (λ (art) (and (member (syntax->datum art) (hash-ref result 'artifacts)) (set! id (add1 id))))
+                                                     (attribute artifacts*))
+                                             (set! id 5))
                                         (hash-set result 'characters (cons (syntax->datum #'name) (hash-ref result 'characters)))
-                                        #f)]
+                                        (raise-syntax-error 'character "improper type given here!!!" expr (list-ref (append (list #'attacks* #'weapon* #'skill* #'burst*)
+                                                                                                                            (attribute artifacts*)) id)))]
                                    [((~datum define-enemy) name rest ...)
                                     (hash-set result 'enemies (cons (syntax->datum #'name) (hash-ref result 'enemies)))]
                                    [((~datum define-team-lineup) name (chars ...))
                                     (if (andmap (λ (char) (member (syntax->datum char) (hash-ref result 'characters)))
                                                 (attribute chars))
                                         (hash-set result 'teams (cons (syntax->datum #'name) (hash-ref result 'teams)))
-                                        #f)]
+                                        (raise-syntax-error 'teams "improper type given here!!!"))]
                                    [((~datum calculate-rotation-damage) team* enemy* _)
                                     (if (and (member (syntax->datum #'team*) (hash-ref result 'teams))
                                              (member (syntax->datum #'enemy*) (hash-ref result 'enemies)))
                                         result
-                                        #f)])
+                                        (raise-syntax-error 'calculate-rotation-damage "improper type given here!!!"))])
                                  result))
             (hash 'attacks (list)
                   'weapons (list)
@@ -175,13 +208,13 @@ enemy
        #'(make-attribute 'def (make-percent 'def% percent))]
       )))
 
-(define-syntax define-weapon
+(define-syntax compile-define-weapon
   (lambda (stx)
     (syntax-parse stx
       [(_ name:id atk:number (attr modifier) buffs ...)
        #'(define name (make-weapon atk (parse-attribute attr modifier) (list (parse-buff buffs) ...)))])))
 
-(define-syntax define-skill
+(define-syntax compile-define-skill
   (lambda (stx)
     (syntax-parse stx
       [(_ name:id cd:number #:attr (attr modifier) #:duration duration:number #:type type buffs ...)
@@ -208,7 +241,7 @@ enemy
                                   #:duration duration]))
        #'(make-applied-buff (parse-attribute attr percent) limit party-wide duration)])))
 
-(define-syntax define-attack-sequence
+(define-syntax compile-define-attack-sequence
   (lambda (stx)
     (syntax-parse stx
       [(_ name:id ([(attr percent:number) duration:number type] ...

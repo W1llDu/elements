@@ -432,10 +432,10 @@ enemy
 (genshin-calc
 
  (define-attack-sequence attack-chain
-   ([(atk% 10) 0.5 physical]
-    [(atk% 25) 0.2 physical]
-    [(atk% 125) 0.8 physical]
-    [(atk% 250) 1.5 physical]
+   ([(atk% 10) 0.5 pyro]
+    [(atk% 25) 0.2 hydro]
+    [(atk% 125) 0.8 pyro]
+    [(atk% 250) 1.5 hydro]
     #:charged [(hp 5) 3.5 pyro]
     #:plunging [(hp 10) 3.5 physical]))
 

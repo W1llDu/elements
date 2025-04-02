@@ -116,6 +116,25 @@
                                                                                            enemy-element
                                                                                            active-buffs))) ; old buffs
                                                     (+ time (attack-duration (list-ref (attack-sequence-normals (flat-char-attacks char)) (sub1 nc))))))]
+                                   [(symbol=? 'C attack)
+                                    (let ([na (attack-sequence-charged (flat-char-attacks char))])
+                                      (calc-dmg/acc team
+                                                    enemy
+                                                    cc
+                                                    (rest attack-string)
+                                                    nc*
+                                                    active-buffs* ; add applied buffs TODO
+                                                    (cond [(symbol=? (attack-type na) 'none) enemy-element]
+                                                          [(symbol=? enemy-element 'none) (attack-type na)]
+                                                          [else 'none]) ; assume reaction
+                                                    (+ dmg
+                                                       (calc-single-dmg (generate-dmg-info char
+                                                                                           enemy
+                                                                                           attack
+                                                                                           nc
+                                                                                           enemy-element
+                                                                                           active-buffs))) ; old buffs
+                                                    (+ time (attack-duration (list-ref (attack-sequence-normals (flat-char-attacks char)) (sub1 nc))))))]
                                    ; TODO: c/e/q/nd
                                    ))]))
 

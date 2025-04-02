@@ -149,7 +149,6 @@
     (syntax-parse stx
       [(_ exprs ...)
        (check-types (attribute exprs))
-       (check-unique-names (attribute exprs))
        #'(begin exprs ...)])))
 #|
    #:attacks
@@ -217,33 +216,41 @@ enemy
                             "Incorrect data input for damage rotation"
                             expr
                             (list-ref (list team enemy) id))))
+
+  (define (find-duplicate value-list)
+    (cond [(empty? value-list) #f]
+          [(cons? value-list) (if (member (car value-list) (cdr value-list))
+                                  (car value-list)
+                                  (find-duplicate (cdr value-list)))]))
   
   (define (check-types exprs)
-    ((λ (result) (if (equal? (length (apply append (hash-values result)))
-                             (length (remove-duplicates
-                                      (apply append
-                                             (hash-values result)))))
-                     (void)
-                     (raise-syntax-error 'calc "a duplicate name was found")))
      (foldl (λ (expr result)
               (if (hash? result)
                   (syntax-parse expr
                     [((~datum define-attack-sequence) name rest ...)
+                     (when (member (syntax->datum #'name) (apply append (hash-values result)))
+                       (raise-syntax-error 'calc "a duplicate name was found" expr #'name))
                      (hash-set result
                                'attacks
                                (cons (syntax->datum #'name)
                                      (hash-ref result 'attacks)))]
                     [((~datum define-weapon) name rest ...)
+                     (when (member (syntax->datum #'name) (apply append (hash-values result)))
+                       (raise-syntax-error 'weapons "a duplicate name was found" expr #'name))
                      (hash-set result
                                'weapons
                                (cons (syntax->datum #'name)
                                      (hash-ref result 'weapons)))]
                     [((~datum define-skill) name rest ...)
+                     (when (member (syntax->datum #'name) (apply append (hash-values result)))
+                       (raise-syntax-error 'skills "a duplicate name was found" expr #'name))
                      (hash-set result
                                'skills
                                (cons (syntax->datum #'name)
                                      (hash-ref result 'skills)))]
                     [((~datum define-artifact) name rest ...)
+                     (when (member (syntax->datum #'name) (apply append (hash-values result)))
+                       (raise-syntax-error 'artifacts "a duplicate name was found" expr #'name))
                      (hash-set result
                                'artifacts
                                (cons (syntax->datum #'name)
@@ -283,16 +290,7 @@ enemy
                   'characters (list)
                   'enemies (list)
                   'teams (list))
-            exprs)))
-  
-  (define (check-unique-names exprs)
-    ; TODO
-    (when #f
-      (raise-syntax-error 'calc "incorrect type")))
-  (define (check-artifact-overlap exprs)
-    ; TODO (optional)
-    (when #f
-      (raise-syntax-error 'calc "incorrect type")))
+            exprs))
   )
 
 (define-syntax parse-attribute
@@ -503,6 +501,20 @@ enemy
    )
 
  (define-skill basic-slash
+   5.0 ;; cooldown
+   #:attr (atk% 25)
+   #:duration 1.0 ;; duration (where character cannot do anything else)
+   #:type pyro
+   (applied-buff
+    [skill-hpup
+     #:effect (hp 20)
+     #:limit 1
+     #:party-wide #f
+     #:duration 10.0]) ;; increase hp by 10% of atk,
+   ;; only applies to current character
+   )
+
+ (define-skill basic-slash2
    5.0 ;; cooldown
    #:attr (atk% 25)
    #:duration 1.0 ;; duration (where character cannot do anything else)

@@ -134,7 +134,7 @@
                                                                                            nc
                                                                                            enemy-element
                                                                                            active-buffs))) ; old buffs
-                                                    (+ time (attack-duration (list-ref (attack-sequence-normals (flat-char-attacks char)) (sub1 nc))))))]
+                                                    (+ time (attack-duration (attack-sequence-charged (flat-char-attacks char))))))]
                                    ; TODO: c/e/q/nd
                                    ))]))
 

@@ -537,8 +537,8 @@ enemy
    #:def 500   ;; base def
    #:atk 900   ;; base atk
    #:em 20    ;; base em
-   #:critr 5     ;; base crit rate
-   #:critd 50    ;; base crit damage
+   #:critr 100     ;; base crit rate
+   #:critd 100    ;; base crit damage
    #:attacks attack-chain
    #:weapon test-weapon ;; weapon
    #:skill basic-slash ;; skill

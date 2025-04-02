@@ -103,7 +103,7 @@
               E
               Q
               ND
-              Swap Int:integer)
+              (Swap Int:integer))
 
  (nonterminal element
               pyro

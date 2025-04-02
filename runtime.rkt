@@ -145,6 +145,37 @@
                                                     (calc-amp-mult (attack-type attack) enemy-element) ; amp-mult (reactions) (optional?)
                                                     (stat-info-critr stats)
                                                     (stat-info-critd stats)))]
+          [(symbol=? 'C attack) (let ([attack (attack-sequence-charged (flat-char-attacks char))])
+                                  (make-damage-info (calc-base-attr (attack-attr attack) stats)
+                                                    ; should be in terms of total atk, not base
+                                                    1 ; base-dmg-mult ; look for dmg dmg% in buffs TODO
+                                                    0 ; base-add ; look for rest of dmg TODO
+                                                    1 ; dmg-mult ; elemental dmg bonus, which we dont have syntax for yet TODO
+                                                    1 ; def-mult ; relies on levels, which we dont have syntax for yet TODO
+                                                    (calc-res (enemy-res enemy) (attack-type attack)) ; actual enemy res, figure out attack attr
+                                                    (calc-amp-mult (attack-type attack) enemy-element) ; amp-mult (reactions) (optional?)
+                                                    (stat-info-critr stats)
+                                                    (stat-info-critd stats)))]
+          [(symbol=? 'E attack) (make-damage-info (calc-base-attr (skill-attr (character-skill char) stats)
+                                                    ; should be in terms of total atk, not base
+                                                    1 ; base-dmg-mult ; look for dmg dmg% in buffs TODO
+                                                    0 ; base-add ; look for rest of dmg TODO
+                                                    1 ; dmg-mult ; elemental dmg bonus, which we dont have syntax for yet TODO
+                                                    1 ; def-mult ; relies on levels, which we dont have syntax for yet TODO
+                                                    (calc-res (enemy-res enemy) (skill-type (character-skill char))) ; actual enemy res, figure out attack attr
+                                                    (calc-amp-mult (skill-type (character-skill char)) enemy-element) ; amp-mult (reactions) (optional?)
+                                                    (stat-info-critr stats)
+                                                    (stat-info-critd stats)))]
+          [(symbol=? 'Q attack) (make-damage-info (calc-base-attr (skill-attr (character-burst char) stats)
+                                                    ; should be in terms of total atk, not base
+                                                    1 ; base-dmg-mult ; look for dmg dmg% in buffs TODO
+                                                    0 ; base-add ; look for rest of dmg TODO
+                                                    1 ; dmg-mult ; elemental dmg bonus, which we dont have syntax for yet TODO
+                                                    1 ; def-mult ; relies on levels, which we dont have syntax for yet TODO
+                                                    (calc-res (enemy-res enemy) (skill-type (character-burst char))) ; actual enemy res, figure out attack attr
+                                                    (calc-amp-mult (skill-type (character-burst char)) enemy-element) ; amp-mult (reactions) (optional?)
+                                                    (stat-info-critr stats)
+                                                    (stat-info-critd stats)))]
           )))
 
 ; TODO

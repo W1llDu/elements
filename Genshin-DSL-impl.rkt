@@ -565,7 +565,7 @@ enemy
 
  (define-team-lineup lone-member (test-char))
 
- (calculate-rotation-damage lone-member dummy (N N N N N N N N N N N N))
+ (calculate-rotation-damage lone-member dummy (N N N N (Swap 1) N N N N N N N N))
  )
 
 #|

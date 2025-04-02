@@ -43,7 +43,7 @@
  (host-interface/definitions
   (define-skill name:id
     cd:number
-    #:attr attr:genshin-attribute
+    #:attr attr:base-attribute
     #:duration duration:number
     #:type type:element
     buffs:buff ...)
@@ -58,9 +58,9 @@
  (host-interface/definitions
   (define-attack-sequence
     name:id
-    ([attr:genshin-attribute duration:number type:element] ...
-     #:charged  [attr2:genshin-attribute duration2:number type2:element]
-     #:plunging [attr3:genshin-attribute duration3:number type3:element]))
+    ([attr:base-attribute duration:number type:element] ...
+     #:charged  [attr2:base-attribute duration2:number type2:element]
+     #:plunging [attr3:base-attribute duration3:number type3:element]))
   #'(compile-define-attack-sequence
      name ([attr duration type] ...
            #:charged  [attr2 duration2 type2]
@@ -82,12 +82,15 @@
               hp
               atk
               def
-              em
               critr
               critd
+              base:base-stat)
+ 
+ (nonterminal base-stat
               hp%
               atk%
-              def%)
+              def%
+              em)
  
  (nonterminal attack-key
               N
@@ -110,6 +113,9 @@
  (nonterminal genshin-attribute
               (attr:stat flat:number)
               (attr:stat (sattr:stat percent:number)))
+ 
+ (nonterminal base-attribute
+              (attr:base-stat percent:number))
 
  (nonterminal buff
               #:binding-space genshin
@@ -452,8 +458,8 @@ enemy
     [(atk% 25) 0.2 hydro]
     [(atk% 125) 0.8 pyro]
     [(atk% 250) 1.5 hydro]
-    #:charged [(hp 5) 3.5 pyro]
-    #:plunging [(hp 10) 3.5 physical]))
+    #:charged [(hp% 5) 3.5 pyro]
+    #:plunging [(hp% 10) 3.5 physical]))
 
 
  (define-weapon test-weapon

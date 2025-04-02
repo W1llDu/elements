@@ -60,7 +60,9 @@
                   (character-attacks char)
                   (character-skill char)
                   (character-burst char)
+                  ; TODO
                   empty #;(append (filter unconditional-buff? (weapon-buffs (character-weapon char))) artifact-uncond-buff)
+                  ; TODO
                   empty #;(append (filter triggered-buff? (weapon-buffs (character-weapon char))) artifact-trigger-buff)
                   ))
 
@@ -101,17 +103,19 @@
                                                                                            attack
                                                                                            nc
                                                                                            enemy-element)))
-                                                    (+ time (calc-duration (flat-char-attacks char) attack nc))))]))]))
+                                                    (+ time (calc-duration (flat-char-attacks char) attack nc))))]
+                                   ; TODO: c/e/q/nd
+                                   ))]))
 
 (define (calc-duration attacks attack nc)
-  ; n/c/e/q/nj/nd/cj/cd/ep/jp
+  ; c/e/q/nd
   (cond [(symbol=? 'N attack) (attack-duration (list-ref (attack-sequence-normals attacks) (sub1 nc)))]
         ))
 
 (define (generate-dmg-info char enemy attack nc enemy-element)
   (let ([stats (calc-total-stats char)])
     ; un-lambda the attrs (should be runtime job)
-    ; n/c/e/q/nj/nd/cj/cd/ep/jp
+    ; c/e/q/nd
     ; calculate base dmg here
     (cond [(symbol=? 'N attack) (let ([attack (list-ref (attack-sequence-normals (flat-char-attacks char)) (sub1 nc))])
                                   (make-damage-info (calc-attr (attack-attr attack) stats)
@@ -142,6 +146,7 @@
                   100 #;cd-sum
                   0 #;flat-em-sum))
 
+; TODO
 (define (calc-attr attr stats)
   (cond
     ; must be %?

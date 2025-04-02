@@ -9,8 +9,8 @@
     [(atk% 25) 0.2 physical]
     [(atk% 125) 0.8 physical]
     [(atk% 250) 1.5 physical]
-    #:charged [(hp 5) 3.5 pyro]
-    #:plunging [(hp 10) 3.5 physical]))
+    #:charged [(hp% 5) 3.5 pyro]
+    #:plunging [(hp% 10) 3.5 physical]))
 
 
  (define-weapon test-weapon

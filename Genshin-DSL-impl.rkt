@@ -84,10 +84,11 @@
               hp
               atk
               def
+              dmg
               scaling:scaling-stat)
 
  (nonterminal scaling-stat
-              dmg% ; cannot be flat
+              dmg% ; sugar, not base
               base:base-stat)
  
  (nonterminal base-stat
@@ -116,7 +117,7 @@
 
  (nonterminal genshin-attribute
               (attr:stat flat:number)
-              (attr:stat (sattr:base-stat percent:number)))
+              (attr:stat (sattr:scaling-stat percent:number)))
  
  (nonterminal base-attribute
               (attr:base-stat percent:number))
@@ -179,12 +180,13 @@ enemy
              (set! id 3)
              (member (syntax->datum burst) (hash-ref result 'skills))
              (set! id 4)
+             ; artifact type uniqueness?
              (andmap (λ (art)
                        (and (member (syntax->datum art)
                                     (hash-ref result 'artifacts))
                             (set! id (add1 id))))
                      artifacts)
-             (set! id 5))
+             (set! id (add1 id)))
         (hash-set result 'characters
                   (cons (syntax->datum name)
                         (hash-ref result 'characters)))
@@ -322,6 +324,8 @@ enemy
        #'(make-attribute 'def (make-percent 'stat percent))]
       [(_ (~datum em) (stat percent:number))
        #'(make-attribute 'em (make-percent 'stat percent))]
+      [(_ (~datum dmg) (stat percent:number))
+       #'(make-attribute 'dmg (make-percent 'stat percent))]
       ; stat by stat percent (sugar)  (hp% 20) = (hp (hp% 20))
       [(_ (~datum hp%) percent:number)
        #'(make-attribute 'hp (make-percent 'hp% percent))]
@@ -329,6 +333,8 @@ enemy
        #'(make-attribute 'atk (make-percent 'atk% percent))]
       [(_ (~datum def%) percent:number)
        #'(make-attribute 'def (make-percent 'def% percent))]
+      [(_ (~datum dmg%) percent:number)
+       #'(make-attribute 'def (make-percent 'dmg% percent))]
       )))
 
 (define-syntax compile-define-weapon

@@ -109,6 +109,8 @@
  (calculate-rotation-damage lone-member dummy (N N N N N N N N N N N N))
  )
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 (module+ test
   (require rackunit syntax/macro-testing)
   (check-exn #rx"improper type given somewhere"
@@ -196,7 +198,7 @@
                        #:skill basic-slash ;; skill
                        #:burst all-attack-up ;; burst
                        #:artifacts test-feather
-                       all-attack-up
+                       all-attack-up ; not an artifact
                        )
                      ))))
              

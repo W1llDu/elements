@@ -79,17 +79,21 @@
      sattr ...))
 
  (nonterminal stat
+              critr ; flat
+              critd ; flat
               hp
               atk
               def
-              critr
-              critd
+              scaling:scaling-stat)
+
+ (nonterminal scaling-stat
+              dmg% ; cannot be flat
               base:base-stat)
  
  (nonterminal base-stat
-              hp%
-              atk%
-              def%
+              hp% ; sugar
+              atk% ; sugar
+              def% ; sugar
               em)
  
  (nonterminal attack-key
@@ -112,13 +116,12 @@
 
  (nonterminal genshin-attribute
               (attr:stat flat:number)
-              (attr:stat (sattr:stat percent:number)))
+              (attr:stat (sattr:base-stat percent:number)))
  
  (nonterminal base-attribute
               (attr:base-stat percent:number))
 
  (nonterminal buff
-              #:binding-space genshin
               (triggered-buff [name:id #:effect attr:genshin-attribute
                                        #:trigger trigger:racket-expr
                                        #:limit limit:number
@@ -309,7 +312,7 @@ enemy
       [(_ (~datum em) amount:number)
        #'(make-attribute 'em amount)]
       ; flat stat by another stat percent
-      ; how to enforce that stat is hp/atk/def/em%?
+      ; how to enforce that stat is hp%/atk%/def%/em?
       #; (hp (atk% 20))
       [(_ (~datum hp) (stat percent:number))
        #'(make-attribute 'hp (make-percent 'stat percent))]
@@ -319,7 +322,7 @@ enemy
        #'(make-attribute 'def (make-percent 'stat percent))]
       [(_ (~datum em) (stat percent:number))
        #'(make-attribute 'em (make-percent 'stat percent))]
-      ; stat by stat percent (shortcut)  (hp% 20) = (hp (hp% 20))
+      ; stat by stat percent (sugar)  (hp% 20) = (hp (hp% 20))
       [(_ (~datum hp%) percent:number)
        #'(make-attribute 'hp (make-percent 'hp% percent))]
       [(_ (~datum atk%) percent:number)
@@ -504,7 +507,7 @@ enemy
      #:limit 1
      #:party-wide #f
      #:duration 10.0]) ;; increase hp by 10% of atk,
-                       ;; only applies to current character
+   ;; only applies to current character
    )
 
  (define-artifact test-feather

@@ -118,9 +118,9 @@
     ; c/e/q/nd
     ; calculate base dmg here
     (cond [(symbol=? 'N attack) (let ([attack (list-ref (attack-sequence-normals (flat-char-attacks char)) (sub1 nc))])
-                                  (make-damage-info (calc-attr (attack-attr attack) stats)
+                                  (make-damage-info (calc-base-attr (attack-attr attack) stats)
                                                     ; should be in terms of total atk, not base
-                                                    1 ; base-dmg-mult
+                                                    1 ; base-dmg-mult ; look for dmg% in buffs
                                                     0 ; base-add
                                                     1 ; dmg-mult
                                                     1 ; def-mult ; TODO
@@ -130,6 +130,7 @@
                                                     (stat-info-critd stats)))]
           )))
 
+; TODO
 ; do a tree traversal (abstract out, use symbols?) flat incr vs incr by other amt (atk (def% 50)) increases atk by 50% of base def
 (define (calc-total-stats char)
   ; remember to scale % to decimal
@@ -146,6 +147,11 @@
                   100 #;cd-sum
                   0 #;flat-em-sum))
 
+(define (calc-base-attr attr stats)
+  ;ignore attribute-attr
+  ; must be %?
+  (* (percent-p (attribute-modifier attr)) 0.01 (lookup-stat stats (percent-attr (attribute-modifier attr)))))
+  
 ; TODO
 (define (calc-attr attr stats)
   (cond
@@ -158,10 +164,14 @@
       modifier
       (* (percent-p modifier) 0.01 (lookup-stat stats (percent-attr modifier)))))
 
-; TODO
 (define (lookup-stat stats attr)
   (cond
     [(symbol=? attr 'atk%) (stat-info-atk stats)]
+    [(symbol=? attr 'def%) (stat-info-def stats)]
+    [(symbol=? attr 'hp%) (stat-info-hp stats)]
+    [(symbol=? attr 'critr%) (stat-info-critr stats)]
+    [(symbol=? attr 'critd%) (stat-info-critd stats)]
+    [(symbol=? attr 'em) (stat-info-em stats)]
     ))
 
 (define (calc-res ress type)
@@ -170,7 +180,6 @@
           [(>= res 0.75) (/ 1 (+ (* 4 res) 1))]
           [else (- 1 res)])))
 
-; TODO
 (define (lookup-res ress type)
   (cond
     [(symbol=? type 'pyro) (resistances-pyro ress)]
@@ -183,7 +192,6 @@
     [(symbol=? type 'physical) (resistances-physical ress)]
     ))
 
-; TODO
 ; amplifying reactions (transformatives DNE)
 (define (calc-amp-mult attack-type enemy-element)
   (match `(,attack-type ,enemy-element)

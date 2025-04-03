@@ -136,11 +136,11 @@
   (cond [(empty? attack-string)
          (save-entry (list current-atk-string dmg time enemy team))
          (define string-data (last (load-entries)))
-         (display "[=======================================================================================]\n")
+         (display "[]=======================================================================================[]\n")
          (display "  Simulation run with input string: ")
          (display current-atk-string)
          (display "\n")
-         (display (format "  Total damage: ~a Total time: ~a second DPS: ~a\n"
+         (display (format "  Total damage: ~a Total time: ~a seconds DPS: ~a\n"
                           (decimal-round dmg)
                           (decimal-round time)
                           (decimal-round (/ dmg time))))
@@ -155,7 +155,7 @@
                           (decimal-round (second best))
                           (decimal-round (third best))
                           (decimal-round (/ (second best) (third best)))))
-         (display "[=======================================================================================]\n\n\n")]
+         (display "[]=======================================================================================[]\n\n\n")]
         [(cons? attack-string) (let* ([char (list-ref team (- cc 1))]
                                       [cc* (if (list? attack) (second attack) cc)]
                                       [nc* (if (and (symbol? attack) (symbol=? 'N attack))

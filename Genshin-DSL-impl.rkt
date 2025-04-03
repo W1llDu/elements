@@ -13,6 +13,16 @@
 ;; (which includes damage)
 ;; (Note: Not everything needs to be an acronym)
 
+#| READ ME
+  This file defines the syntax for the DSL,
+  which includes a syntax-spec implementation +
+  macros for defining various objects, like weapons
+  or skills. Additionally, we use this file to implement
+  compile time error checks, to make sure the proper
+  items are added to the proper places, and to prevent
+  duplicate definitions from showing up at compile time.
+|#
+
 (require (for-syntax syntax/parse))
 (require syntax-spec-v3 (for-syntax syntax/parse syntax/to-string))
 (require "runtime.rkt")

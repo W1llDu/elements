@@ -470,6 +470,11 @@ enemy
     (syntax-parse stx
       [(_) #'(clear-file)])))
 
+(define-syntax view-raw-data
+  (lambda (stx)
+    (syntax-parse stx
+      [(_) #'(view-data)])))
+
 ;;;;;;;;;;;;;;;;;;;;;;
 #| (genshin-calc
 

@@ -14,7 +14,8 @@
          make-enemy
          make-resistances
          calc-dmg
-         clear-file)
+         clear-file
+         view-data)
 
 (define-struct character [hp def atk critr critd em attacks weapon skill burst artifacts] #:transparent)
 (define-struct weapon [atk substat buffs] #:transparent)
@@ -70,7 +71,11 @@
     (lambda (out) (void))
     #:exists 'truncate))
 
+(define (view-data)
+  raw-data)
+
 (define current-atk-string '())
+(define raw-data '())
 
 (define (calc-dmg team enemy attack-string)
   ; pull out party-wide uncond buffs into active-buffs
@@ -170,7 +175,7 @@
                           (decimal-round (third best))
                           (decimal-round (/ (second best) (third best)))))
          (display "[]=======================================================================================[]\n\n")
-         (list dmg time)]
+         (set! raw-data (list dmg time))]
         [(cons? attack-string)
          ; stage 1
          (let* ([char (list-ref team (- cc 1))]

@@ -243,7 +243,7 @@
                          #:duration 10.0]))
                      ))))
 
-  (check-equal? ((λ () (genshin-calc
+  (check-equal? (begin ((λ () (genshin-calc
 
                        (define-attack-sequence attack-chain
                          ([(atk% 10) 0.5 physical]
@@ -360,7 +360,8 @@
 
                        (define-team-lineup two-members (test-char test-char2))
                        (define-team-lineup lone-member (test-char))
-                       (calculate-rotation-damage two-members dummy (E Q N N N N (Swap 1) N N N ND))))) '(26081.90330288 5.699999999999999)))
+                       (calculate-rotation-damage two-members dummy (E Q N N N N (Swap 1) N N N ND)))))
+                       (view-raw-data)) '(26081.90330288 5.699999999999999)))
 
 (module+ test
   (require rackunit syntax/macro-testing)
@@ -477,7 +478,7 @@
                          #:duration 10.0]))
                      ))))
 
-  (check-equal? ((λ () (genshin-calc
+  (check-equal? (begin ((λ () (genshin-calc
 
                        (define-attack-sequence attack-chain
                          ([(atk% 10) 0.5 physical]
@@ -594,4 +595,5 @@
 
                        (define-team-lineup two-members (test-char test-char2))
                        (define-team-lineup lone-member (test-char))
-                       (calculate-rotation-damage two-members dummy (N))))) '(279.12224384 0.5)))
+                       (calculate-rotation-damage two-members dummy (N)))
+                   )) (view-raw-data)) '(279.12224384 0.5)))

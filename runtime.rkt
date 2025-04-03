@@ -129,19 +129,33 @@
                        (applied-buff-duration applied)))
 
 
+(define (decimal-round num)
+  (/ (round (* 100 num)) 100))
+
 (define (calc-dmg/acc team enemy attack-string cc nc active-buffs enemy-element dmg time) ; more acc args like buffs (later)
   (cond [(empty? attack-string)
          (save-entry (list current-atk-string dmg time enemy team))
          (define string-data (last (load-entries)))
-         (display (list dmg time))
+         (display "[=======================================================================================]\n")
+         (display "  Simulation run with input string: ")
+         (display current-atk-string)
          (display "\n")
+         (display (format "  Total damage: ~a Total time: ~a second DPS: ~a\n"
+                          (decimal-round dmg)
+                          (decimal-round time)
+                          (decimal-round (/ dmg time))))
+         (display "\n\n")
          (define best (determine-current-optimal (load-entries)
                                                  (list)
                                                  (fourth string-data)
                                                  (fifth string-data)))
-         (display (format "best run with this team was a sequence of: ~a with a dps of: ~a\n"
-                          (first best)
-                          (/ (second best) (third best))))]
+         (display (format "  The best run with this layout was a sequence of: ~a\n"
+                          (first best)))
+         (display (format "  Total damage: ~a Total time ~a seconds DPS: ~a\n"
+                          (decimal-round (second best))
+                          (decimal-round (third best))
+                          (decimal-round (/ (second best) (third best)))))
+         (display "[=======================================================================================]\n\n\n")]
         [(cons? attack-string) (let* ([char (list-ref team (- cc 1))]
                                       [cc* (if (list? attack) (second attack) cc)]
                                       [nc* (if (and (symbol? attack) (symbol=? 'N attack))

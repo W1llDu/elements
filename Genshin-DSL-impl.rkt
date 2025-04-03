@@ -162,7 +162,7 @@
     (syntax-parse stx
       [(_ exprs ...)
        (check-types (attribute exprs))
-       #'(begin exprs ...)])))
+       #'(begin (display "Thanks for using ELEMENTS!\n\n\n") exprs ...)])))
 #|
    #:attacks
    #:weapon
@@ -471,7 +471,7 @@ enemy
       [(_) #'(clear-file)])))
 
 ;;;;;;;;;;;;;;;;;;;;;;
-(genshin-calc
+#| (genshin-calc
 
  (define-attack-sequence attack-chain
    ([(atk% 10) 0.5 pyro]
@@ -607,7 +607,7 @@ enemy
  (define-team-lineup lone-member (test-char))
 
  #;(calculate-rotation-damage two-members dummy (E Q N N N N (Swap 1) N N N ND))
- )
+ ) |# 
 
 #|
 

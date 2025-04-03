@@ -88,6 +88,21 @@
    test-goblet
    )
 
+  (define-character test-char2
+   #:hp 12000 ;; base hp
+   #:def 500   ;; base def
+   #:atk 900   ;; base atk
+   #:em 20    ;; base em
+   #:critr 25     ;; base crit rate
+   #:critd 50    ;; base crit damage
+   #:attacks attack-chain
+   #:weapon test-weapon ;; weapon
+   #:skill basic-slash ;; skill
+   #:burst all-attack-up ;; burst
+   #:artifacts test-feather
+   test-goblet
+   )
+
  (define-enemy dummy
    #|#:type Pyro|# ; for reactions
    #:def 1000
@@ -104,8 +119,9 @@
 
 
 
+ (define-team-lineup two-members (test-char test-char2))
  (define-team-lineup lone-member (test-char))
-
+ (calculate-rotation-damage two-members dummy (E Q N N N N (Swap 1) N N N ND))
  (calculate-rotation-damage lone-member dummy (N N N N N N N N N N N N))
  )
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -113,7 +129,7 @@
 
 (module+ test
   (require rackunit syntax/macro-testing)
-  (check-exn #rx"improper type given somewhere"
+  (check-exn #rx"character: Incorrect data input for character"
              (λ () (convert-compile-time-error
                     (genshin-calc
 
@@ -202,7 +218,7 @@
                        )
                      ))))
              
-  (check-exn #rx"a duplicate name was found"
+  (check-exn #rx"weapons: a duplicate name was found"
              (λ () (convert-compile-time-error
                     (genshin-calc
 

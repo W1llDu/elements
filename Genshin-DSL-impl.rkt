@@ -35,10 +35,6 @@
  (extension-class genshin-macro #:binding-space genshin)
  
  (host-interface/definitions
-  (genshin-calc exprs:expr ...)
-  #'(compile-genshin-calc exprs ...))
- 
- (host-interface/definitions
   (define-weapon name:id
     damage:number
     attr:genshin-attribute
@@ -161,7 +157,7 @@
 
  )
 
-(define-syntax compile-genshin-calc
+(define-syntax genshin-calc
   (lambda (stx)
     (syntax-parse stx
       [(_ exprs ...)
@@ -610,7 +606,7 @@ enemy
 
  (define-team-lineup lone-member (test-char))
 
- (calculate-rotation-damage two-members dummy (E Q N N N N (Swap 1) N N N N ND))
+ #;(calculate-rotation-damage two-members dummy (E Q N N N N (Swap 1) N N N ND))
  )
 
 #|

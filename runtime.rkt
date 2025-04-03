@@ -143,7 +143,7 @@
 (define (decimal-round num)
   (/ (round (* 100 num)) 100))
 
-;; stage 1: 
+;; main loop 
 (define (calc-dmg/acc team enemy attack-string cc nc active-buffs enemy-element dmg time) ; more acc args like buffs (later)
   (cond [(empty? attack-string)
          (save-entry (list current-atk-string dmg time enemy team))
@@ -169,6 +169,7 @@
                           (decimal-round (/ (second best) (third best)))))
          (display "[]=======================================================================================[]\n\n\n")]
         [(cons? attack-string)
+         ; stage 1
          (let* ([char (list-ref team (- cc 1))]
                 [attack (first attack-string)]
                 [cc* (if (list? attack) (second attack) cc)]
@@ -215,10 +216,10 @@
                             [(or (symbol=? 'E attack) (symbol=? 'Q attack))
                              (flat-skill-type action)])]
                 [enemy-element* (cond [(list? attack) '()]
-                                      [(or (symbol=? type 'none) (symbol=? type 'physical)) enemy-element]
+                                      [(symbol=? type 'physical) enemy-element]
                                       [(symbol=? enemy-element 'none) type]
                                       [(symbol=? type enemy-element) enemy-element]
-                                      [else 'none])]
+                                      [else 'none])]; elements react, so clear
                 [attr (cond [(list? attack) '()]
                             [(or (symbol=? 'N attack) (symbol=? 'ND attack) (symbol=? 'C attack))
                              (attack-attr action)]
@@ -227,6 +228,10 @@
                 [dmg* (if (list? attack)
                           dmg
                           (+ dmg
+                             ; stage 2, stage 3
+                             ;; generate-dmg-info is a complex way
+                             ;; to get all the modified stats + values needed to
+                             ;; calculate damage
                              (calc-single-dmg (generate-dmg-info char
                                                                  enemy
                                                                  attack
@@ -289,7 +294,11 @@
         [(cons? new) (merge-buffs (rest new) (merge-buff* (first new) old))]))
 
 (define (merge-buff* new old)
-  (cond [(empty? old) (cons new old)]
+  (cond [(empty? old) (list (make-triggered-buff (triggered-buff-effect new)
+                                                 (triggered-buff-trigger new)
+                                                 1
+                                                 (triggered-buff-party-wide new)
+                                                 (triggered-buff-duration new)))]
         [(cons? old) (if (triggered-buff=?* new (first old))
                          (cons (merge-buff new (first old)) (rest old))
                          (cons (first old) (merge-buff* new (rest old))))]))
@@ -311,12 +320,12 @@
        (equal? (triggered-buff-trigger b1) (triggered-buff-trigger b2))
        (equal? (triggered-buff-party-wide b1) (triggered-buff-party-wide b2))))
 
-(define (generate-dmg-info char enemy attack nc enemy-element buffs type attr)
-  (let ([stats (calc-total-stats char buffs)])
+; stage 2
+(define (generate-dmg-info char enemy attack nc enemy-element active-buffs type attr)
+  (let ([stats (calc-total-stats char active-buffs)])
     ; c/e/q/nd
-    ; calculate base dmg here
+    ; calculate base dmg here + extra stats
     (make-damage-info (calc-base-attr attr stats)
-                      ; should be in terms of total atk, not base
                       1 ; base-dmg-mult ; look for dmg dmg% in buffs, which we dont have syntax for
                       0 ; base-add ; look for rest of dmg, which we dont have syntax for
                       1 ; dmg-mult ; elemental dmg bonus, which we dont have syntax for
@@ -326,37 +335,47 @@
                       (stat-info-critr stats)
                       (stat-info-critd stats))))
 
+(define (calc-base-attr attr stats)
+  ; ignore attribute-attr
+  ; must be %?
+  (* (percent-p (attribute-modifier attr))
+     0.01
+     (lookup-stat stats (percent-attr (attribute-modifier attr)))))
+
 ; do a tree traversal (abstract out, use symbols?) flat incr vs incr by other amt (atk (def% 50)) increases atk by 50% of base def
-(define (calc-total-stats char buffs)
+(define (calc-total-stats char active-buffs)
   ; remember to scale % to decimal
   ; % is already desugared
-  (let ([buffs (append (flat-char-unconditional-buffs char) buffs)]
+  (let ([buffs (append (flat-char-unconditional-buffs char) active-buffs)]
         [base-stat-info (make-stat-info (flat-char-hp char)
                                         (flat-char-atk char)
                                         (flat-char-def char)
                                         (flat-char-critr char)
                                         (flat-char-critd char)
                                         (flat-char-em char))])
+    ; (stat flat)
+    ; (stat (stat% percent))
+    ; base stats + percent modifiers calculated (and flat mods too)
     (make-stat-info (+ (flat-char-hp char) ; base hp
                        (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info))
-                                     (get-buffs-with-attr buffs 'hp))))
+                                     (get-mods-with-attr buffs 'hp))))
                     (+ (flat-char-atk char) ; base atk
                        (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info))
-                                     (get-buffs-with-attr buffs 'atk))))
+                                     (get-mods-with-attr buffs 'atk))))
                     (+ (flat-char-def char) ; base def
                        (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info))
-                                     (get-buffs-with-attr buffs 'def))))
+                                     (get-mods-with-attr buffs 'def))))
                     (+ (flat-char-critr char)
                        (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info))
-                                     (get-buffs-with-attr buffs 'critr))))
+                                     (get-mods-with-attr buffs 'critr))))
                     (+ (flat-char-critd char)
                        (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info))
-                                     (get-buffs-with-attr buffs 'critd))))
+                                     (get-mods-with-attr buffs 'critd))))
                     (+ (flat-char-em char)
                        (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info))
-                                     (get-buffs-with-attr buffs 'em)))))))
+                                     (get-mods-with-attr buffs 'em)))))))
 
-(define (get-buffs-with-attr buffs attr)
+(define (get-mods-with-attr buffs attr)
   ; convert to modifier
   (map (λ (buff) (cond [(unconditional-buff? buff) (attribute-modifier (unconditional-buff-effect buff))]
                        [(triggered-buff? buff) (attribute-modifier (triggered-buff-effect buff))]))
@@ -365,14 +384,6 @@
                                [(triggered-buff? buff)
                                 (symbol=? (attribute-attr (triggered-buff-effect buff)) attr)]))
                buffs)))
-  
-
-(define (calc-base-attr attr stats)
-  ; ignore attribute-attr
-  ; must be %?
-  (* (percent-p (attribute-modifier attr))
-     0.01
-     (lookup-stat stats (percent-attr (attribute-modifier attr)))))
 
 
 (define (calc-modifier modifier base-stats)
@@ -419,7 +430,7 @@
     ['(pyro hydro) 1.5]
     [_ 1]))
 
-; final calculation
+; final calculation for a single attack
 (define (calc-single-dmg dmg)
   (* (+ (* (damage-info-base-dmg dmg)
            (damage-info-base-dmg-mult dmg))

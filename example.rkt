@@ -117,13 +117,14 @@
    #:reduction 5
    )
 
-
-
  (define-team-lineup two-members (test-char test-char2))
  (define-team-lineup lone-member (test-char))
  (calculate-rotation-damage two-members dummy (E Q N N N N (Swap 1) N N N ND))
  (calculate-rotation-damage lone-member dummy (N N N N N N N N N N N N))
  )
+
+;; (clear-data-file) ;; if the user wants to clear the data file
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 

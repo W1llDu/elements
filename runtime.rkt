@@ -94,10 +94,14 @@
                   (append (filter triggered-buff? (append (weapon-buffs (character-weapon char))
                                                           (skill-buffs (character-skill char))
                                                           (skill-buffs (character-burst char))))
-                          (map (λ (buff) (applied->triggered buff 'normal-attack)) (filter applied-buff? (weapon-buffs (character-weapon char))))
-                          (map (λ (buff) (applied->triggered buff 'charged-attack)) (filter applied-buff? (weapon-buffs (character-weapon char))))
-                          (map (λ (buff) (applied->triggered buff 'skill)) (filter applied-buff? (skill-buffs (character-skill char))))
-                          (map (λ (buff) (applied->triggered buff 'burst)) (filter applied-buff? (skill-buffs (character-burst char)))))
+                          (map (λ (buff) (applied->triggered buff 'normal-attack))
+                               (filter applied-buff? (weapon-buffs (character-weapon char))))
+                          (map (λ (buff) (applied->triggered buff 'charged-attack))
+                               (filter applied-buff? (weapon-buffs (character-weapon char))))
+                          (map (λ (buff) (applied->triggered buff 'skill))
+                               (filter applied-buff? (skill-buffs (character-skill char))))
+                          (map (λ (buff) (applied->triggered buff 'burst))
+                               (filter applied-buff? (skill-buffs (character-burst char)))))
                   ; weapon trigger: on normal&charged
                   ; skill/burst trigger: on skill/burst
                   ))
@@ -156,92 +160,94 @@
                           (decimal-round (third best))
                           (decimal-round (/ (second best) (third best)))))
          (display "[]=======================================================================================[]\n\n\n")]
-        [(cons? attack-string) (let* ([char (list-ref team (- cc 1))]
-                                      [cc* (if (list? attack) (second attack) cc)]
-                                      [nc* (if (and (symbol? attack) (symbol=? 'N attack))
-                                               (if (= nc (length (attack-sequence-normals (flat-char-attacks char))))
-                                                   1
-                                                   (+ 1 nc))
-                                               1)]
-                                      [attack (first attack-string)]
-                                      [duration (calc-duration attack nc char)]
-                                      ; add newly triggered buffs
-                                      [active-buffs* (merge-buffs (filter (λ (buff) (symbol=? (triggered-buff-trigger buff)
-                                                                                              (attack->trigger attack)))
-                                                                          (flat-char-trigger-buffs char))
-                                                                  active-buffs)]
-                                      ; remove buffs that, after duration passes, will expire
-                                      [active-buffs** (filter (λ (buff) (< 0 (triggered-buff-duration buff)))
-                                                              (map (λ (buff) (make-triggered-buff (triggered-buff-effect buff)
-                                                                                                  (triggered-buff-trigger buff)
-                                                                                                  (triggered-buff-limit buff)
-                                                                                                  (triggered-buff-party-wide buff)
-                                                                                                  (- (triggered-buff-duration buff) duration)))
-                                                                   active-buffs*))]
-                                      [action (cond [(list? attack) '()]
-                                                    [(or (symbol=? 'N attack) (symbol=? 'ND attack))
-                                                     (list-ref (attack-sequence-normals (flat-char-attacks char)) (sub1 nc))]
-                                                    [(symbol=? 'C attack) (attack-sequence-charged (flat-char-attacks char))]
-                                                    [(symbol=? 'E attack) (flat-char-skill char)]
-                                                    [(symbol=? 'Q attack) (flat-char-burst char)])]
-                                      [type (cond [(list? attack) '()]
-                                                  [(or (symbol=? 'N attack) (symbol=? 'ND attack) (symbol=? 'C attack))
-                                                   (attack-type action)]
-                                                  [(or (symbol=? 'E attack) (symbol=? 'Q attack))
-                                                   (flat-skill-type action)])]
-                                      [enemy-element* (cond [(list? attack) '()]
-                                                            [(symbol=? type 'none) enemy-element]
-                                                            [(symbol=? enemy-element 'none) type]
-                                                            [(symbol=? type enemy-element) enemy-element]
-                                                            [else 'none])]
-                                      [attr (cond [(list? attack) '()]
-                                                  [(or (symbol=? 'N attack) (symbol=? 'ND attack) (symbol=? 'C attack))
-                                                   (attack-attr action)]
-                                                  [(or (symbol=? 'E attack) (symbol=? 'Q attack))
-                                                   (flat-skill-attr action)])]
-                                      [dmg* (if (list? attack)
-                                                dmg
-                                                (+ dmg
-                                                   (calc-single-dmg (generate-dmg-info char
-                                                                                       enemy
-                                                                                       attack
-                                                                                       nc
-                                                                                       enemy-element
-                                                                                       active-buffs*
-                                                                                       type
-                                                                                       attr))))]
-                                      [time* (+ time duration)])
-                                 (if (list? attack)
-                                     (if (= cc (second attack))
-                                         ; swap to same = do nothing
-                                         (calc-dmg/acc team
-                                                       enemy
-                                                       (rest attack-string)
-                                                       cc
-                                                       nc
-                                                       active-buffs
-                                                       enemy-element
-                                                       dmg
-                                                       time)
-                                         (calc-dmg/acc team
-                                                       enemy
-                                                       (rest attack-string)
-                                                       cc*
-                                                       nc*
-                                                       ; remove non-teamwide buffs
-                                                       (filter triggered-buff-party-wide active-buffs**)
-                                                       enemy-element
-                                                       dmg
-                                                       time*))
-                                     (calc-dmg/acc team
-                                                   enemy
-                                                   (rest attack-string)
-                                                   cc*
-                                                   nc*
-                                                   active-buffs**
-                                                   enemy-element*
-                                                   dmg*
-                                                   time*)))]))
+        [(cons? attack-string)
+         (let* ([char (list-ref team (- cc 1))]
+                [cc* (if (list? attack) (second attack) cc)]
+                [nc* (if (and (symbol? attack) (symbol=? 'N attack))
+                         (if (= nc (length (attack-sequence-normals (flat-char-attacks char))))
+                             1
+                             (+ 1 nc))
+                         1)]
+                [attack (first attack-string)]
+                [duration (calc-duration attack nc char)]
+                ; add newly triggered buffs
+                [active-buffs* (merge-buffs (filter (λ (buff) (symbol=? (triggered-buff-trigger buff)
+                                                                        (attack->trigger attack)))
+                                                    (flat-char-trigger-buffs char))
+                                            active-buffs)]
+                ; remove buffs that, after duration passes, will expire
+                [active-buffs** (filter (λ (buff) (< 0 (triggered-buff-duration buff)))
+                                        (map (λ (buff) (make-triggered-buff (triggered-buff-effect buff)
+                                                                            (triggered-buff-trigger buff)
+                                                                            (triggered-buff-limit buff)
+                                                                            (triggered-buff-party-wide buff)
+                                                                            (- (triggered-buff-duration buff)
+                                                                               duration)))
+                                             active-buffs*))]
+                [action (cond [(list? attack) '()]
+                              [(or (symbol=? 'N attack) (symbol=? 'ND attack))
+                               (list-ref (attack-sequence-normals (flat-char-attacks char)) (sub1 nc))]
+                              [(symbol=? 'C attack) (attack-sequence-charged (flat-char-attacks char))]
+                              [(symbol=? 'E attack) (flat-char-skill char)]
+                              [(symbol=? 'Q attack) (flat-char-burst char)])]
+                [type (cond [(list? attack) '()]
+                            [(or (symbol=? 'N attack) (symbol=? 'ND attack) (symbol=? 'C attack))
+                             (attack-type action)]
+                            [(or (symbol=? 'E attack) (symbol=? 'Q attack))
+                             (flat-skill-type action)])]
+                [enemy-element* (cond [(list? attack) '()]
+                                      [(symbol=? type 'none) enemy-element]
+                                      [(symbol=? enemy-element 'none) type]
+                                      [(symbol=? type enemy-element) enemy-element]
+                                      [else 'none])]
+                [attr (cond [(list? attack) '()]
+                            [(or (symbol=? 'N attack) (symbol=? 'ND attack) (symbol=? 'C attack))
+                             (attack-attr action)]
+                            [(or (symbol=? 'E attack) (symbol=? 'Q attack))
+                             (flat-skill-attr action)])]
+                [dmg* (if (list? attack)
+                          dmg
+                          (+ dmg
+                             (calc-single-dmg (generate-dmg-info char
+                                                                 enemy
+                                                                 attack
+                                                                 nc
+                                                                 enemy-element
+                                                                 active-buffs*
+                                                                 type
+                                                                 attr))))]
+                [time* (+ time duration)])
+           (if (list? attack)
+               (if (= cc (second attack))
+                   ; swap to same = do nothing
+                   (calc-dmg/acc team
+                                 enemy
+                                 (rest attack-string)
+                                 cc
+                                 nc
+                                 active-buffs
+                                 enemy-element
+                                 dmg
+                                 time)
+                   (calc-dmg/acc team
+                                 enemy
+                                 (rest attack-string)
+                                 cc*
+                                 nc*
+                                 ; remove non-teamwide buffs
+                                 (filter triggered-buff-party-wide active-buffs**)
+                                 enemy-element
+                                 dmg
+                                 time*))
+               (calc-dmg/acc team
+                             enemy
+                             (rest attack-string)
+                             cc*
+                             nc*
+                             active-buffs**
+                             enemy-element*
+                             dmg*
+                             time*)))]))
 
 (define (attack->trigger attack)
   (match attack
@@ -323,24 +329,32 @@
                                         (flat-char-critd char)
                                         (flat-char-em char))])
     (make-stat-info (+ (flat-char-hp char) ; base hp
-                       (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info)) (get-buffs-with-attr buffs 'hp))))
+                       (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info))
+                                     (get-buffs-with-attr buffs 'hp))))
                     (+ (flat-char-atk char) ; base atk
-                       (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info)) (get-buffs-with-attr buffs 'atk))))
+                       (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info))
+                                     (get-buffs-with-attr buffs 'atk))))
                     (+ (flat-char-def char) ; base def
-                       (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info)) (get-buffs-with-attr buffs 'def))))
+                       (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info))
+                                     (get-buffs-with-attr buffs 'def))))
                     (+ (flat-char-critr char)
-                       (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info)) (get-buffs-with-attr buffs 'critr))))
+                       (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info))
+                                     (get-buffs-with-attr buffs 'critr))))
                     (+ (flat-char-critd char)
-                       (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info)) (get-buffs-with-attr buffs 'critd))))
+                       (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info))
+                                     (get-buffs-with-attr buffs 'critd))))
                     (+ (flat-char-em char)
-                       (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info)) (get-buffs-with-attr buffs 'em)))))))
+                       (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info))
+                                     (get-buffs-with-attr buffs 'em)))))))
 
 (define (get-buffs-with-attr buffs attr)
   ; convert to modifier
   (map (λ (buff) (cond [(unconditional-buff? buff) (attribute-modifier (unconditional-buff-effect buff))]
                        [(triggered-buff? buff) (attribute-modifier (triggered-buff-effect buff))]))
-       (filter (λ (buff) (cond [(unconditional-buff? buff) (symbol=? (attribute-attr (unconditional-buff-effect buff)) attr)]
-                               [(triggered-buff? buff) (symbol=? (attribute-attr (triggered-buff-effect buff)) attr)]))
+       (filter (λ (buff) (cond [(unconditional-buff? buff)
+                                (symbol=? (attribute-attr (unconditional-buff-effect buff)) attr)]
+                               [(triggered-buff? buff)
+                                (symbol=? (attribute-attr (triggered-buff-effect buff)) attr)]))
                buffs)))
   
 

@@ -41,14 +41,14 @@
 
  (host-interface/definitions
   (define-skill name:id
-    cd:number
+    #:cooldown cd:number
     #:attr attr:base-attribute
     #:duration duration:number
     #:type type:element
     buffs:buff ...)
   #'(compile-define-skill
      name
-     cd
+     #:cooldown cd
      #:attr attr
      #:duration duration
      #:type type
@@ -109,7 +109,7 @@
               hydro
               cryo
               electro
-              gro
+              geo
               anemo
               dendro
               physical)
@@ -121,9 +121,15 @@
  (nonterminal base-attribute
               (attr:base-stat percent:number))
 
+ (nonterminal trigger
+              normal-attack
+              charged-attack
+              skill
+              burst)
+
  (nonterminal buff
               (triggered-buff [name:id #:effect attr:genshin-attribute
-                                       #:trigger trigger:racket-expr
+                                       #:trigger t:trigger
                                        #:limit limit:number
                                        #:party-wide party-wide:boolean
                                        #:duration duration:number])
@@ -148,7 +154,6 @@
     (syntax-parse stx
       [(_ exprs ...)
        (check-types (attribute exprs))
-       (check-unique-names (attribute exprs))
        #'(begin exprs ...)])))
 #|
    #:attacks
@@ -216,82 +221,81 @@ enemy
                             "Incorrect data input for damage rotation"
                             expr
                             (list-ref (list team enemy) id))))
+
+  (define (find-duplicate value-list)
+    (cond [(empty? value-list) #f]
+          [(cons? value-list) (if (member (car value-list) (cdr value-list))
+                                  (car value-list)
+                                  (find-duplicate (cdr value-list)))]))
   
   (define (check-types exprs)
-    ((λ (result) (if (equal? (length (apply append (hash-values result)))
-                             (length (remove-duplicates
-                                      (apply append
-                                             (hash-values result)))))
-                     (void)
-                     (raise-syntax-error 'calc "a duplicate name was found")))
-     (foldl (λ (expr result)
-              (if (hash? result)
-                  (syntax-parse expr
-                    [((~datum define-attack-sequence) name rest ...)
-                     (hash-set result
-                               'attacks
-                               (cons (syntax->datum #'name)
-                                     (hash-ref result 'attacks)))]
-                    [((~datum define-weapon) name rest ...)
-                     (hash-set result
-                               'weapons
-                               (cons (syntax->datum #'name)
-                                     (hash-ref result 'weapons)))]
-                    [((~datum define-skill) name rest ...)
-                     (hash-set result
-                               'skills
-                               (cons (syntax->datum #'name)
-                                     (hash-ref result 'skills)))]
-                    [((~datum define-artifact) name rest ...)
-                     (hash-set result
-                               'artifacts
-                               (cons (syntax->datum #'name)
-                                     (hash-ref result 'artifacts)))]
-                    [((~datum define-character)
-                      name _ _ _ _ _ _ _ _ _ _ _ _ _
-                      attacks*:id _
-                      weapon*:id _
-                      skill*:id _
-                      burst*:id _
-                      artifacts* ...)
-                     (check-character-syntax
-                      result
-                      #'name
-                      #'attacks*
-                      #'weapon*
-                      #'skill*
-                      #'burst*
-                      (attribute artifacts*)
-                      expr)]
-                    [((~datum define-enemy) name rest ...)
-                     (hash-set result
-                               'enemies
-                               (cons (syntax->datum #'name)
-                                     (hash-ref result 'enemies)))]
-                    [((~datum define-team-lineup) name (chars ...))
-                     (check-team-syntax result
-                                        (attribute chars)
-                                        #'name expr)]
-                    [((~datum calculate-rotation-damage) team* enemy* _)
-                     (check-rotation-syntax result #'team* #'enemy* expr)])
-                  result))
-            (hash 'attacks (list)
-                  'weapons (list)
-                  'skills (list)
-                  'artifacts (list)
-                  'characters (list)
-                  'enemies (list)
-                  'teams (list))
-            exprs)))
-  
-  (define (check-unique-names exprs)
-    ; TODO
-    (when #f
-      (raise-syntax-error 'calc "incorrect type")))
-  (define (check-artifact-overlap exprs)
-    ; TODO (optional)
-    (when #f
-      (raise-syntax-error 'calc "incorrect type")))
+    (foldl (λ (expr result)
+             (if (hash? result)
+                 (syntax-parse expr
+                   [((~datum define-attack-sequence) name rest ...)
+                    (when (member (syntax->datum #'name) (apply append (hash-values result)))
+                      (raise-syntax-error 'calc "a duplicate name was found" expr #'name))
+                    (hash-set result
+                              'attacks
+                              (cons (syntax->datum #'name)
+                                    (hash-ref result 'attacks)))]
+                   [((~datum define-weapon) name rest ...)
+                    (when (member (syntax->datum #'name) (apply append (hash-values result)))
+                      (raise-syntax-error 'weapons "a duplicate name was found" expr #'name))
+                    (hash-set result
+                              'weapons
+                              (cons (syntax->datum #'name)
+                                    (hash-ref result 'weapons)))]
+                   [((~datum define-skill) name rest ...)
+                    (when (member (syntax->datum #'name) (apply append (hash-values result)))
+                      (raise-syntax-error 'skills "a duplicate name was found" expr #'name))
+                    (hash-set result
+                              'skills
+                              (cons (syntax->datum #'name)
+                                    (hash-ref result 'skills)))]
+                   [((~datum define-artifact) name rest ...)
+                    (when (member (syntax->datum #'name) (apply append (hash-values result)))
+                      (raise-syntax-error 'artifacts "a duplicate name was found" expr #'name))
+                    (hash-set result
+                              'artifacts
+                              (cons (syntax->datum #'name)
+                                    (hash-ref result 'artifacts)))]
+                   [((~datum define-character)
+                     name _ _ _ _ _ _ _ _ _ _ _ _ _
+                     attacks*:id _
+                     weapon*:id _
+                     skill*:id _
+                     burst*:id _
+                     artifacts* ...)
+                    (check-character-syntax
+                     result
+                     #'name
+                     #'attacks*
+                     #'weapon*
+                     #'skill*
+                     #'burst*
+                     (attribute artifacts*)
+                     expr)]
+                   [((~datum define-enemy) name rest ...)
+                    (hash-set result
+                              'enemies
+                              (cons (syntax->datum #'name)
+                                    (hash-ref result 'enemies)))]
+                   [((~datum define-team-lineup) name (chars ...))
+                    (check-team-syntax result
+                                       (attribute chars)
+                                       #'name expr)]
+                   [((~datum calculate-rotation-damage) team* enemy* _)
+                    (check-rotation-syntax result #'team* #'enemy* expr)])
+                 result))
+           (hash 'attacks (list)
+                 'weapons (list)
+                 'skills (list)
+                 'artifacts (list)
+                 'characters (list)
+                 'enemies (list)
+                 'teams (list))
+           exprs))
   )
 
 (define-syntax parse-attribute
@@ -348,7 +352,7 @@ enemy
   (lambda (stx)
     (syntax-parse stx
       [(_ name:id
-          cd:number
+          #:cooldown cd:number
           #:attr (attr modifier)
           #:duration duration:number
           #:type type buffs ...)
@@ -367,7 +371,7 @@ enemy
                                     #:party-wide party-wide:boolean
                                     #:duration duration]))
        #'(make-triggered-buff (parse-attribute attr percent)
-                              trigger
+                              'trigger
                               limit
                               party-wide
                               duration)]
@@ -480,7 +484,7 @@ enemy
    (triggered-buff
     [dmgup
      #:effect (atk% 20.0) ;; increase atk by 20%
-     #:trigger 'normal-attack
+     #:trigger normal-attack
      #:limit 1
      #:party-wide #f
      #:duration 10.0])
@@ -493,20 +497,34 @@ enemy
 
  ;; note : duration is optional
  (define-skill all-attack-up
-   25.0
+   #:cooldown 25.0
    #:attr (atk% 125)
    #:duration 0.1
-   #:type pyro
+   #:type hydro
    (applied-buff
     [skill-atkup
-     #:effect (atk 125)
+     #:effect (atk (hp% 50))
      #:limit 1
      #:party-wide #t
      #:duration 10]) ;; this time applies to all members of a lineup
    )
 
  (define-skill basic-slash
-   5.0 ;; cooldown
+   #:cooldown 5.0 ;; cooldown
+   #:attr (atk% 25)
+   #:duration 1.0 ;; duration (where character cannot do anything else)
+   #:type pyro
+   (applied-buff
+    [skill-hpup
+     #:effect (hp 20)
+     #:limit 1
+     #:party-wide #f
+     #:duration 10.0]) ;; increase hp by 10% of atk,
+   ;; only applies to current character
+   )
+
+ (define-skill basic-slash2
+   #:cooldown 5.0 ;; cooldown
    #:attr (atk% 25)
    #:duration 1.0 ;; duration (where character cannot do anything else)
    #:type pyro
@@ -540,8 +558,8 @@ enemy
    #:def 500   ;; base def
    #:atk 900   ;; base atk
    #:em 20    ;; base em
-   #:critr 100     ;; base crit rate
-   #:critd 100    ;; base crit damage
+   #:critr 25     ;; base crit rate
+   #:critd 50    ;; base crit damage
    #:attacks attack-chain
    #:weapon test-weapon ;; weapon
    #:skill basic-slash ;; skill
@@ -581,7 +599,10 @@ enemy
 
  (define-team-lineup lone-member (test-char test-char2))
 
-  ;; (calculate-rotation-damage lone-member dummy (N N N N (Swap 2) N (Swap 1) N N N N N N))
+
+ (define-team-lineup lone-member (test-char))
+
+ (calculate-rotation-damage lone-member dummy (N N N N C (Swap 1) N N N N N N N N E Q))
  )
 
 #|

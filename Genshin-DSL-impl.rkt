@@ -20,7 +20,6 @@
 
 (provide (all-defined-out))
 
-
 (syntax-spec
 
  (extension-class genshin-macro #:binding-space genshin)
@@ -458,6 +457,10 @@ enemy
       [(_ lineup:id enemy:id (attack-string ...))
        #'(calc-dmg lineup enemy (list 'attack-string ...))])))
 
+(define-syntax clear-data-file
+  (lambda (stx)
+    (syntax-parse stx
+      [(_) #'(clear-file)])))
 
 ;;;;;;;;;;;;;;;;;;;;;;
 (genshin-calc
@@ -547,6 +550,21 @@ enemy
    test-goblet
    )
 
+ (define-character test-char2
+   #:hp 12000 ;; base hp
+   #:def 500   ;; base def
+   #:atk 900   ;; base atk
+   #:em 20    ;; base em
+   #:critr 100     ;; base crit rate
+   #:critd 100    ;; base crit damage
+   #:attacks attack-chain
+   #:weapon test-weapon ;; weapon
+   #:skill basic-slash ;; skill
+   #:burst all-attack-up ;; burst
+   #:artifacts test-feather
+   test-goblet
+   )
+
  (define-enemy dummy
    #|#:type Pyro|# ; for reactions
    #:def 1000
@@ -561,11 +579,9 @@ enemy
    #:reduction 5
    )
 
+ (define-team-lineup lone-member (test-char test-char2))
 
-
- (define-team-lineup lone-member (test-char))
-
- (calculate-rotation-damage lone-member dummy (N N N N (Swap 1) N N N N N N N N))
+  ;; (calculate-rotation-damage lone-member dummy (N N N N (Swap 2) N (Swap 1) N N N N N N))
  )
 
 #|

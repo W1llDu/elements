@@ -13,40 +13,66 @@
          make-percent
          make-enemy
          make-resistances
-         calc-dmg)
+         calc-dmg
+         clear-file)
 
-(define-struct character [hp def atk critr critd em attacks weapon skill burst artifacts])
-(define-struct weapon [atk substat buffs])
-(define-struct skill [cd attr duration type buffs])
-(define-struct attack [attr duration type]) ; split attr
-(define-struct artifact [set-name main-stat substats])
-(define-struct triggered-buff [effect trigger limit party-wide duration])
-(define-struct unconditional-buff [effect party-wide])
-(define-struct applied-buff [effect limit party-wide duration])
-(define-struct attack-sequence [normals charged plunge])
-(define-struct attribute [attr modifier]) ; amount is either number or percent (what is valid depends on attr)
-(define-struct percent [attr p])
-(define-struct enemy [def res reduction])
-(define-struct resistances [pyro hydro electro cryo geo anemo dendro physical])
+(define-struct character [hp def atk critr critd em attacks weapon skill burst artifacts] #:transparent)
+(define-struct weapon [atk substat buffs] #:transparent)
+(define-struct skill [cd attr duration type buffs] #:transparent)
+(define-struct attack [attr duration type] #:transparent) ; split attr
+(define-struct artifact [set-name main-stat substats] #:transparent)
+(define-struct triggered-buff [effect trigger limit party-wide duration] #:transparent)
+(define-struct unconditional-buff [effect party-wide] #:transparent)
+(define-struct applied-buff [effect limit party-wide duration] #:transparent)
+(define-struct attack-sequence [normals charged plunge] #:transparent)
+(define-struct attribute [attr modifier] #:transparent) ; amount is either number or percent (what is valid depends on attr)
+(define-struct percent [attr p] #:transparent)
+(define-struct enemy [def res reduction] #:transparent)
+(define-struct resistances [pyro hydro electro cryo geo anemo dendro physical] #:transparent)
 
 ; internal
-(define-struct flat-char [hp atk def critr critd em attacks skill burst unconditional-buffs trigger-buffs])
-(define-struct flat-skill [cd attr duration type])
-(define-struct stat-info [hp atk def critr critd em])
+(define-struct flat-char [hp atk def critr critd em attacks skill burst unconditional-buffs trigger-buffs] #:transparent)
+(define-struct flat-skill [cd attr duration type] #:transparent)
+(define-struct stat-info [hp atk def critr critd em] #:transparent)
 (define-struct damage-info [base-dmg base-dmg-mult base-add
                                      dmg-mult
                                      def-mult
                                      res
                                      amp-mult
                                      critr
-                                     critd])
+                                     critd] #:transparent)
 ; base-dmg-mult: talent/constellation
 ; base-add: talent/constellation/weapon/artifact (increase by scaling amount (def% 56))
 
 ; final output: dmg, time, dmg/s
 
+(define (save-entry entry)
+  (call-with-output-file "data.txt"
+    (lambda (out)
+      (write entry out) 
+      (newline out))   
+    #:exists 'append))
+
+(define (load-entries)
+  (with-handlers ([exn:fail? (lambda (_) '())])
+    (call-with-input-file "data.txt"
+      (lambda (in)
+        (let loop ([entries '()])
+          (let ([line (read in)])
+            (if (eof-object? line)
+                (reverse entries)
+                (loop (cons line entries)))))))))
+
+(define (clear-file)
+  (call-with-output-file "data.txt"
+    (lambda (out) (void))
+    #:exists 'truncate))
+
+(define current-atk-string '())
+
 (define (calc-dmg team enemy attack-string)
   ; pull out party-wide uncond buffs into active-buffs
+  (set! current-atk-string attack-string)
   (calc-dmg/acc (map flatten-char team) enemy 1 attack-string 1 empty 'none 0 0))
 
 (define (flatten-char char)
@@ -71,8 +97,32 @@
 (define (flatten-skill skill)
   (make-flat-skill (skill-cd skill) (skill-attr skill) (skill-duration skill) (skill-type skill)))
 
+
+(define (determine-current-optimal data-list curr-min team enemy)
+  (cond [(empty? data-list) curr-min]
+        [else (define entry (first data-list))
+              (define dps (/ (second entry)
+                             (third entry)))
+              (if (and (or (empty? curr-min) (> dps (/ (second curr-min)
+                                                       (third curr-min))))
+                       (equal? (fourth entry) team)
+                       (equal? (fifth entry) enemy))
+                  (determine-current-optimal (rest data-list) entry team enemy)
+                  (determine-current-optimal (rest data-list) curr-min team enemy))]))
+
 (define (calc-dmg/acc team enemy cc attack-string nc active-buffs enemy-element dmg time) ; more acc args like buffs (later)
-  (cond [(empty? attack-string) (list dmg time)]
+  (cond [(empty? attack-string)
+         (save-entry (list current-atk-string dmg time enemy team))
+         (define string-data (last (load-entries)))
+         (display (list dmg time))
+         (display "\n")
+         (define best (determine-current-optimal (load-entries)
+                                                 (list)
+                                                 (fourth string-data)
+                                                 (fifth string-data)))
+         (display (format "best run with this team was a sequence of: ~a with a dps of: ~a\n"
+                          (first best)
+                          (/ (second best) (third best))))]
         [(cons? attack-string) (let* ([attack (first attack-string)]
                                       [char (list-ref team (- cc 1))]
                                       [nc* (if (and (symbol? attack) (symbol=? 'N attack))

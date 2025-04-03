@@ -162,7 +162,7 @@
     (syntax-parse stx
       [(_ exprs ...)
        (check-types (attribute exprs))
-       #'(begin (display "Thanks for using ELEMENTS!\n\n\n") exprs ...)])))
+       #'(begin (display "Thanks for using ELEMENTS!\n\n") exprs ...)])))
 #|
    #:attacks
    #:weapon

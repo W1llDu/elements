@@ -57,11 +57,13 @@
   (with-handlers ([exn:fail? (lambda (_) '())])
     (call-with-input-file "data.txt"
       (lambda (in)
-        (let loop ([entries '()])
-          (let ([line (read in)])
-            (if (eof-object? line)
-                (reverse entries)
-                (loop (cons line entries)))))))))
+        (read-lines '() in)))))
+
+(define (read-lines entries in)
+  (let ([line (read in)])
+    (if (eof-object? line)
+        (reverse entries)
+        (read-lines (cons line entries) in))))
 
 (define (clear-file)
   (call-with-output-file "data.txt"
@@ -167,7 +169,8 @@
                           (decimal-round (second best))
                           (decimal-round (third best))
                           (decimal-round (/ (second best) (third best)))))
-         (display "[]=======================================================================================[]\n\n\n")]
+         (display "[]=======================================================================================[]\n\n")
+         (list dmg time)]
         [(cons? attack-string)
          ; stage 1
          (let* ([char (list-ref team (- cc 1))]

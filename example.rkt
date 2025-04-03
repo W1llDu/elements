@@ -19,7 +19,7 @@
    (triggered-buff
     [dmgup
      #:effect (atk% 20.0) ;; increase atk by 20%
-     #:trigger 'normal-attack
+     #:trigger normal-attack
      #:limit 1
      #:party-wide #f
      #:duration 10.0])
@@ -32,7 +32,7 @@
 
  ;; note : duration is optional
  (define-skill all-attack-up
-   25.0
+   #:cooldown 25.0
    #:attr (atk% 125)
    #:duration 0.1
    #:type pyro
@@ -45,7 +45,7 @@
    )
 
  (define-skill basic-slash
-   5.0 ;; cooldown
+   #:cooldown 5.0 ;; cooldown
    #:attr (atk% 25)
    #:duration 1.0 ;; duration (where character cannot do anything else)
    #:type pyro

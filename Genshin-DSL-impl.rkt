@@ -45,7 +45,7 @@
     #:attr attr:base-attribute
     #:duration duration:number
     #:type type:element
-    buffs:buff ...)
+    buffs:trigger-buff ...)
   #'(compile-define-skill
      name
      #:cooldown cd
@@ -83,11 +83,9 @@
               hp
               atk
               def
-              dmg
               scaling:scaling-stat)
 
  (nonterminal scaling-stat
-              dmg% ; sugar, not base
               base:base-stat)
  
  (nonterminal base-stat
@@ -128,13 +126,17 @@
               burst)
 
  (nonterminal buff
+              (unconditional-buff [name:id #:effect attr:genshin-attribute
+                                           #:party-wide party-wide:boolean])
+              trigger:trigger-buff)
+              
+
+ (nonterminal trigger-buff
               (triggered-buff [name:id #:effect attr:genshin-attribute
                                        #:trigger t:trigger
                                        #:limit limit:number
                                        #:party-wide party-wide:boolean
                                        #:duration duration:number])
-              (unconditional-buff [name:id #:effect attr:genshin-attribute
-                                           #:party-wide party-wide:boolean])
               (applied-buff [name:id #:effect attr:genshin-attribute
                                      #:limit limit:number
                                      #:party-wide party-wide:boolean
@@ -327,8 +329,6 @@ enemy
        #'(make-attribute 'def (make-percent 'stat percent))]
       [(_ (~datum em) (stat percent:number))
        #'(make-attribute 'em (make-percent 'stat percent))]
-      [(_ (~datum dmg) (stat percent:number))
-       #'(make-attribute 'dmg (make-percent 'stat percent))]
       ; stat by stat percent (sugar)  (hp% 20) = (hp (hp% 20))
       [(_ (~datum hp%) percent:number)
        #'(make-attribute 'hp (make-percent 'hp% percent))]
@@ -336,8 +336,6 @@ enemy
        #'(make-attribute 'atk (make-percent 'atk% percent))]
       [(_ (~datum def%) percent:number)
        #'(make-attribute 'def (make-percent 'def% percent))]
-      [(_ (~datum dmg%) percent:number)
-       #'(make-attribute 'def (make-percent 'dmg% percent))]
       )))
 
 (define-syntax compile-define-weapon
@@ -486,7 +484,7 @@ enemy
      #:effect (atk% 20.0) ;; increase atk by 20%
      #:trigger normal-attack
      #:limit 1
-     #:party-wide #f
+     #:party-wide #t
      #:duration 10.0])
 
    (unconditional-buff
@@ -505,7 +503,7 @@ enemy
     [skill-atkup
      #:effect (atk (hp% 50))
      #:limit 1
-     #:party-wide #t
+     #:party-wide #f
      #:duration 10]) ;; this time applies to all members of a lineup
    )
 
@@ -573,8 +571,8 @@ enemy
    #:def 500   ;; base def
    #:atk 900   ;; base atk
    #:em 20    ;; base em
-   #:critr 100     ;; base crit rate
-   #:critd 100    ;; base crit damage
+   #:critr 25     ;; base crit rate
+   #:critd 50    ;; base crit damage
    #:attacks attack-chain
    #:weapon test-weapon ;; weapon
    #:skill basic-slash ;; skill
@@ -597,12 +595,12 @@ enemy
    #:reduction 5
    )
 
- (define-team-lineup lone-member (test-char test-char2))
+ (define-team-lineup two-members (test-char test-char2))
 
 
  (define-team-lineup lone-member (test-char))
 
- (calculate-rotation-damage lone-member dummy (N N N N C (Swap 1) N N N N N N N N E Q))
+ (calculate-rotation-damage two-members dummy (E Q N N N N (Swap 1) N N N N ND))
  )
 
 #|

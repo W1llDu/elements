@@ -174,6 +174,13 @@ enemy
 (begin-for-syntax
   (require racket/list)
 
+  (define (check-member expr result syn key checking)
+    (unless (member (syntax->datum syn) (hash-ref result key))
+           (raise-syntax-error checking
+                               (format "Incorrect data input for ~s" checking)
+                               expr
+                               syn)))
+
   (define (check-character-syntax
            result
            name
@@ -184,51 +191,30 @@ enemy
            artifacts
            expr)
     (define id 0)
-    (if (and (member (syntax->datum attacks) (hash-ref result 'attacks))
-             (set! id 1)
-             (member (syntax->datum weapon) (hash-ref result 'weapons))
-             (set! id 2)
-             (member (syntax->datum skill) (hash-ref result 'skills))
-             (set! id 3)
-             (member (syntax->datum burst) (hash-ref result 'skills))
-             (set! id 4)
-             ; artifact type uniqueness?
-             (andmap (λ (art)
-                       (and (member (syntax->datum art)
-                                    (hash-ref result 'artifacts))
-                            (set! id (add1 id))))
-                     artifacts)
-             (set! id (add1 id)))
-        (hash-set result 'characters
-                  (cons (syntax->datum name)
-                        (hash-ref result 'characters)))
-        (raise-syntax-error 'character
-                            "Incorrect data input for character"
-                            expr
-                            (list-ref (append (list attacks weapon skill burst)
-                                              artifacts) id))))
+    (and (check-member expr result attacks 'attacks 'character)
+         (check-member expr result weapon 'weapons 'character)
+         (check-member expr result skill 'skills 'character)
+         (check-member expr result burst 'skills 'character)
+         ; artifact type uniqueness?
+         (andmap (λ (art)
+                   (check-member expr result art 'artifacts 'character))
+                 artifacts))
+    (hash-set result 'characters
+              (cons (syntax->datum name)
+                    (hash-ref result 'characters))))
 
   (define (check-team-syntax result chars name expr)
     (define id 0)
-    (if (andmap (λ (char) (and (member (syntax->datum char)
-                                       (hash-ref result 'characters))
-                               (set! id (add1 id))))
-                chars)
-        (hash-set result 'teams (cons (syntax->datum name) (hash-ref result 'teams)))
-        (raise-syntax-error 'teams
-                            "Incorrect data input for team"
-                            expr
-                            (list-ref chars id))))
+    (andmap (λ (char) (check-member expr result char 'characters 'team))
+            chars)
+    (hash-set result 'teams (cons (syntax->datum name) (hash-ref result 'teams))))
 
   (define (check-rotation-syntax result team enemy expr)
     (define id 0)
-    (if (and (member (syntax->datum team) (hash-ref result 'teams)) (set! id 1)
-             (member (syntax->datum enemy) (hash-ref result 'enemies)))
-        result
-        (raise-syntax-error 'calculate-rotation-damage
-                            "Incorrect data input for damage rotation"
-                            expr
-                            (list-ref (list team enemy) id))))
+    (and (check-member expr result team 'teams 'calculate-damage-rotation)
+         (check-member expr result enemy 'enemies 'calculate-damage-rotation))
+    result
+    )
 
   (define (find-duplicate value-list)
     (cond [(empty? value-list) #f]

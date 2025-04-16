@@ -31,6 +31,9 @@
 (define-struct enemy [def res reduction] #:transparent)
 (define-struct resistances [pyro hydro electro cryo geo anemo dendro physical] #:transparent)
 
+;; to make passing arguments much easier
+(define-struct acc-data [team enemy attack-string cc nc active-buffs enemy-element dmg time] #:transparent)
+ 
 ; internal
 (define-struct flat-char [hp atk def critr critd em attacks skill burst unconditional-buffs trigger-buffs] #:transparent)
 (define-struct flat-skill [cd attr duration type] #:transparent)
@@ -80,7 +83,7 @@
 (define (calc-dmg team enemy attack-string)
   ; pull out party-wide uncond buffs into active-buffs
   (set! current-atk-string attack-string)
-  (calc-dmg/acc (map flatten-char team) enemy attack-string 1 1 empty 'none 0 0))
+  (display-data (make-acc-data (map flatten-char team) enemy attack-string 1 1 empty 'none 0 0)))
 
 ;; flattens character to make buffs more accessible
 (define (flatten-char char)
@@ -90,7 +93,7 @@
                   (character-critr char)
                   (character-critd char)
                   (character-em char)
-                  (character-attacks char)
+                  (character-attacks char) 
                   (flatten-skill (character-skill char))
                   (flatten-skill (character-burst char))
                   ; unconditional
@@ -150,32 +153,48 @@
 (define (decimal-round num)
   (/ (round (* 100 num)) 100))
 
+
+(define (display-data acc-values)
+  (define result (calc-dmg/acc acc-values))
+  (define final-dmg (first result))
+  (define final-time (second result))
+  (define string-data (last (load-entries)))
+  (display "[]=======================================================================================[]\n")
+  (display "  Simulation run with input string: ")
+  (display current-atk-string)
+  (display "\n")
+  (display (format "  Total damage: ~a Total time: ~a seconds DPS: ~a\n"
+                   (decimal-round final-dmg)
+                   (decimal-round final-time)
+                   (decimal-round (/ final-dmg final-time)))) 
+  (display "\n\n")
+  (define best (determine-current-optimal (load-entries)
+                                          (list)
+                                          (fourth string-data)
+                                          (fifth string-data)))
+  (display (format "  The best run with this layout was a sequence of: ~a\n"
+                   (first best)))
+  (display (format "  Total damage: ~a Total time ~a seconds DPS: ~a\n"
+                   (decimal-round (second best))
+                   (decimal-round (third best))
+                   (decimal-round (/ (second best) (third best)))))
+  (display "[]=======================================================================================[]\n\n"))
+
 ;; main loop 
-(define (calc-dmg/acc team enemy attack-string cc nc active-buffs enemy-element dmg time) ; more acc args like buffs (later)
+(define (calc-dmg/acc acc-values) ; more acc args like buffs (later)
+  (define attack-string (acc-data-attack-string acc-values))
+  (define dmg (acc-data-dmg acc-values))
+  (define time (acc-data-time acc-values))
+  (define team (acc-data-team acc-values))
+  (define enemy (acc-data-enemy acc-values))
+  (define cc (acc-data-cc acc-values))
+  (define nc (acc-data-nc acc-values))
+  (define active-buffs (acc-data-active-buffs acc-values))
+  (define enemy-element (acc-data-enemy-element acc-values))
   (cond [(empty? attack-string)
          (save-entry (list current-atk-string dmg time enemy team))
-         (define string-data (last (load-entries)))
-         (display "[]=======================================================================================[]\n")
-         (display "  Simulation run with input string: ")
-         (display current-atk-string)
-         (display "\n")
-         (display (format "  Total damage: ~a Total time: ~a seconds DPS: ~a\n"
-                          (decimal-round dmg)
-                          (decimal-round time)
-                          (decimal-round (/ dmg time))))
-         (display "\n\n")
-         (define best (determine-current-optimal (load-entries)
-                                                 (list)
-                                                 (fourth string-data)
-                                                 (fifth string-data)))
-         (display (format "  The best run with this layout was a sequence of: ~a\n"
-                          (first best)))
-         (display (format "  Total damage: ~a Total time ~a seconds DPS: ~a\n"
-                          (decimal-round (second best))
-                          (decimal-round (third best))
-                          (decimal-round (/ (second best) (third best)))))
-         (display "[]=======================================================================================[]\n\n")
-         (set! raw-data (list dmg time))]
+         (set! raw-data (list dmg time))
+         (list dmg time)]
         [(cons? attack-string)
          ; stage 1
          (let* ([char (list-ref team (- cc 1))]
@@ -252,7 +271,7 @@
            (if (list? attack)
                (if (= cc (second attack))
                    ; swap to same = do nothing
-                   (calc-dmg/acc team
+                   (calc-dmg/acc (make-acc-data team
                                  enemy
                                  (rest attack-string)
                                  cc
@@ -260,8 +279,8 @@
                                  active-buffs
                                  enemy-element
                                  dmg
-                                 time)
-                   (calc-dmg/acc team
+                                 time))
+                   (calc-dmg/acc (make-acc-data team
                                  enemy
                                  (rest attack-string)
                                  cc*
@@ -270,8 +289,8 @@
                                  (filter triggered-buff-party-wide active-buffs**)
                                  enemy-element
                                  dmg
-                                 time*))
-               (calc-dmg/acc team
+                                 time*)))
+               (calc-dmg/acc (make-acc-data team
                              enemy
                              (rest attack-string)
                              cc*
@@ -279,7 +298,7 @@
                              active-buffs**
                              enemy-element*
                              dmg*
-                             time*)))]))
+                             time*))))]))
 
 (define (attack->trigger attack)
   (match attack

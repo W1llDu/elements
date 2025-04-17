@@ -85,6 +85,32 @@
   (set! current-atk-string attack-string)
   (display-data (make-acc-data (map flatten-char team) enemy attack-string 1 1 empty 'none 0 0)))
 
+;; flatten unconditional buffs for easier representation
+(define (flatten-unconditional char)
+  (append (filter unconditional-buff? (append (weapon-buffs (character-weapon char))
+                                              (skill-buffs (character-skill char))
+                                              (skill-buffs (character-burst char))))
+          ; attribute stats get treated as unconditional buffs
+          (apply append (map (λ (artifact) (cons (attr->unconditional (artifact-main-stat artifact))
+                                                 (map attr->unconditional (artifact-substats artifact))))
+                             (character-artifacts char)))))
+
+;; convert applied buffs to corresponding triggered buffs for easier calculation
+(define (convert-to-triggered symbol value)
+  (map (λ (buff) (applied->triggered buff symbol))
+       (filter applied-buff? value)))
+
+;; flatten triggered buffs for easier representation
+(define (flatten-triggered char)
+  (append (filter triggered-buff? (append (weapon-buffs (character-weapon char))
+                                          (skill-buffs (character-skill char))
+                                          (skill-buffs (character-burst char))))
+          ; convert applied to triggered at runtime, mapped to specific triggers
+          (convert-to-triggered 'normal-attack (weapon-buffs (character-weapon char)))
+          (convert-to-triggered 'charged-attack (weapon-buffs (character-weapon char)))
+          (convert-to-triggered 'skill (skill-buffs (character-skill char)))
+          (convert-to-triggered 'burst (skill-buffs (character-burst char)))))
+
 ;; flattens character to make buffs more accessible
 (define (flatten-char char)
   (make-flat-char (character-hp char)
@@ -96,34 +122,19 @@
                   (character-attacks char) 
                   (flatten-skill (character-skill char))
                   (flatten-skill (character-burst char))
-                  ; unconditional
-                  (append (filter unconditional-buff? (append (weapon-buffs (character-weapon char))
-                                                              (skill-buffs (character-skill char))
-                                                              (skill-buffs (character-burst char))))
-                          ; attribute stats get treated as unconditional buffs
-                          (apply append (map (λ (artifact) (cons (attr->unconditional (artifact-main-stat artifact))
-                                                                 (map attr->unconditional (artifact-substats artifact))))
-                                             (character-artifacts char))))
+                  (flatten-unconditional char)
                   ; triggered
-                  (append (filter triggered-buff? (append (weapon-buffs (character-weapon char))
-                                                          (skill-buffs (character-skill char))
-                                                          (skill-buffs (character-burst char))))
-                          ; convert applied to triggered at runtime, mapped to specific triggers
-                          (map (λ (buff) (applied->triggered buff 'normal-attack))
-                               (filter applied-buff? (weapon-buffs (character-weapon char))))
-                          (map (λ (buff) (applied->triggered buff 'charged-attack))
-                               (filter applied-buff? (weapon-buffs (character-weapon char))))
-                          (map (λ (buff) (applied->triggered buff 'skill))
-                               (filter applied-buff? (skill-buffs (character-skill char))))
-                          (map (λ (buff) (applied->triggered buff 'burst))
-                               (filter applied-buff? (skill-buffs (character-burst char)))))
+                  (flatten-triggered char)
                   ; weapon trigger: on normal&charged
                   ; skill/burst trigger: on skill/burst
                   ))
 
 ;; flattens skills like characters
 (define (flatten-skill skill)
-  (make-flat-skill (skill-cd skill) (skill-attr skill) (skill-duration skill) (skill-type skill)))
+  (make-flat-skill (skill-cd skill)
+                   (skill-attr skill)
+                   (skill-duration skill)
+                   (skill-type skill)))
 
 ; attribute to unconditional (for artifacts)
 (define (attr->unconditional attr)
@@ -149,11 +160,11 @@
                   (determine-current-optimal (rest data-list) entry team enemy)
                   (determine-current-optimal (rest data-list) curr-max team enemy))]))
 
-
+;; simple rounding function for displaying data
 (define (decimal-round num)
   (/ (round (* 100 num)) 100))
 
-
+;; calculate and display the results of a damage calculation
 (define (display-data acc-values)
   (define result (calc-dmg/acc acc-values))
   (define final-dmg (first result))
@@ -180,8 +191,109 @@
                    (decimal-round (/ (second best) (third best)))))
   (display "[]=======================================================================================[]\n\n"))
 
-;; main loop 
-(define (calc-dmg/acc acc-values) ; more acc args like buffs (later)
+;; calculate the duration of the current attack
+(define (calc-duration acc-values char attack)
+  (define nc (acc-data-nc acc-values))
+  (cond [(list? attack) 1]
+        [(symbol=? 'N attack)
+         (attack-duration (list-ref (attack-sequence-normals (flat-char-attacks char))
+                                    (sub1 nc)))]
+        [(symbol=? 'C attack)
+         (attack-duration (attack-sequence-charged (flat-char-attacks char)))]
+        [(symbol=? 'E attack)
+         (flat-skill-duration (flat-char-skill char))]
+        [(symbol=? 'Q attack)
+         (flat-skill-duration (flat-char-burst char))]
+        [(symbol=? 'ND attack) 0.1]
+        ))
+
+;; add newly triggered buffs
+(define (add-new-triggered acc-values char attack)
+  (merge-buffs (filter (λ (buff) (symbol=? (triggered-buff-trigger buff)
+                                           (attack->trigger attack)))
+                       (flat-char-trigger-buffs char))
+               (acc-data-active-buffs acc-values)))
+
+;; remove buffs that, after duration passes, will expire
+(define (remove-expiring-buffs active-buffs* duration)
+  (filter (λ (buff) (< 0 (triggered-buff-duration buff)))
+          (map (λ (buff) (make-triggered-buff (triggered-buff-effect buff)
+                                              (triggered-buff-trigger buff)
+                                              (triggered-buff-limit buff)
+                                              (triggered-buff-party-wide buff)
+                                              (- (triggered-buff-duration buff)
+                                                 duration)))
+               active-buffs*)))
+
+;; determine the action the character is taking
+(define (determine-action acc-values char attack)
+  (cond [(list? attack) '()]
+        [(or (symbol=? 'N attack) (symbol=? 'ND attack))
+         (list-ref (attack-sequence-normals (flat-char-attacks char))
+                   (sub1 (acc-data-nc acc-values)))]
+        [(symbol=? 'C attack) (attack-sequence-charged (flat-char-attacks char))]
+        [(symbol=? 'E attack) (flat-char-skill char)]
+        [(symbol=? 'Q attack) (flat-char-burst char)]))
+
+;; determine the type of the characters action
+(define (determine-type attack action)
+  (cond [(list? attack) '()]
+        [(or (symbol=? 'N attack) (symbol=? 'ND attack) (symbol=? 'C attack))
+         (attack-type action)]
+        [(or (symbol=? 'E attack) (symbol=? 'Q attack))
+         (flat-skill-type action)]))
+
+(define (determine-enemy-element acc-values type attack)
+  (define enemy-element (acc-data-enemy-element acc-values))
+  (cond [(list? attack) '()]
+        [(symbol=? type 'physical) enemy-element]
+        [(symbol=? enemy-element 'none) type]
+        [(symbol=? type enemy-element) enemy-element]
+        [else 'none]))
+
+;; determine the attribute of the character's action
+(define (determine-action-attribute action attack)
+  (cond [(list? attack) '()]
+        [(or (symbol=? 'N attack) (symbol=? 'ND attack) (symbol=? 'C attack))
+         (attack-attr action)]
+        [(or (symbol=? 'E attack) (symbol=? 'Q attack))
+         (flat-skill-attr action)]))
+
+;; determine the damage of the action
+(define (determine-damage acc-values char attack active-buffs* type attr)
+  (define dmg (acc-data-dmg acc-values))
+  (define enemy (acc-data-enemy acc-values))
+  (define nc (acc-data-nc acc-values))
+  (define enemy-element (acc-data-enemy-element acc-values))
+  (if (list? attack)
+      dmg
+      (+ dmg
+         ; stage 2, stage 3
+         ;; generate-dmg-info is a complex way
+         ;; to get all the modified stats + values needed to
+         ;; calculate damage
+         (calc-single-dmg (generate-dmg-info char
+                                             enemy
+                                             attack
+                                             nc
+                                             enemy-element
+                                             active-buffs*
+                                             type
+                                             attr)))))
+;; determine the next nc
+(define (determine-next-nc acc-values char attack)
+  (define nc (acc-data-nc acc-values))
+  (if (and (symbol? attack) (symbol=? 'N attack))
+      (if (= nc
+             (length (attack-sequence-normals
+                      (flat-char-attacks char))))
+          1
+          (+ 1 nc))
+      1))
+
+;; assign the necessary new values for the next attack and calculate damage
+(define (update-and-calculate acc-values)
+  ;; define struct data
   (define attack-string (acc-data-attack-string acc-values))
   (define dmg (acc-data-dmg acc-values))
   (define time (acc-data-time acc-values))
@@ -191,114 +303,66 @@
   (define nc (acc-data-nc acc-values))
   (define active-buffs (acc-data-active-buffs acc-values))
   (define enemy-element (acc-data-enemy-element acc-values))
+  ;; use the old values to calculate new values
+  (let* ([char (list-ref team (- cc 1))]
+         [attack (first attack-string)]
+         [cc* (if (list? attack) (second attack) cc)]
+         [nc* (determine-next-nc acc-values char attack)]
+         [duration (calc-duration acc-values char attack)]
+         [active-buffs* (add-new-triggered acc-values char attack)]
+         [active-buffs** (remove-expiring-buffs active-buffs* duration)]
+         [action (determine-action acc-values char attack)]
+         [type (determine-type attack action)]
+         [enemy-element* (determine-enemy-element acc-values type attack)]
+         [attr (determine-action-attribute action attack)]
+         [dmg* (determine-damage acc-values char attack active-buffs* type attr)]
+         [time* (+ time duration)])
+    (if (list? attack)
+        (if (= cc (second attack))
+            ; swap to same = do nothing
+            (calc-dmg/acc (make-acc-data team
+                                         enemy
+                                         (rest attack-string)
+                                         cc
+                                         nc
+                                         active-buffs
+                                         enemy-element
+                                         dmg
+                                         time))
+            (calc-dmg/acc (make-acc-data team
+                                         enemy
+                                         (rest attack-string)
+                                         cc*
+                                         nc*
+                                         ; remove non-teamwide buffs
+                                         (filter triggered-buff-party-wide active-buffs**)
+                                         enemy-element
+                                         dmg
+                                         time*)))
+        (calc-dmg/acc (make-acc-data team
+                                     enemy
+                                     (rest attack-string)
+                                     cc*
+                                     nc*
+                                     active-buffs**
+                                     enemy-element*
+                                     dmg*
+                                     time*)))))
+
+;; main loop calculate the total damage and time taken for a rotation
+(define (calc-dmg/acc acc-values) ; more acc args like buffs (later)
+  ;; define struct data
+  (define attack-string (acc-data-attack-string acc-values))
+  (define dmg (acc-data-dmg acc-values))
+  (define time (acc-data-time acc-values))
+  (define team (acc-data-team acc-values))
+  (define enemy (acc-data-enemy acc-values))
   (cond [(empty? attack-string)
          (save-entry (list current-atk-string dmg time enemy team))
          (set! raw-data (list dmg time))
          (list dmg time)]
         [(cons? attack-string)
-         ; stage 1
-         (let* ([char (list-ref team (- cc 1))]
-                [attack (first attack-string)]
-                [cc* (if (list? attack) (second attack) cc)]
-                [nc* (if (and (symbol? attack) (symbol=? 'N attack))
-                         (if (= nc (length (attack-sequence-normals (flat-char-attacks char))))
-                             1
-                             (+ 1 nc))
-                         1)]
-                [duration (cond [(list? attack) 1]
-                                [(symbol=? 'N attack)
-                                 (attack-duration (list-ref (attack-sequence-normals (flat-char-attacks char))
-                                                            (sub1 nc)))]
-                                [(symbol=? 'C attack)
-                                 (attack-duration (attack-sequence-charged (flat-char-attacks char)))]
-                                [(symbol=? 'E attack)
-                                 (flat-skill-duration (flat-char-skill char))]
-                                [(symbol=? 'Q attack)
-                                 (flat-skill-duration (flat-char-burst char))]
-                                [(symbol=? 'ND attack) 0.1]
-                                )]
-                ; add newly triggered buffs
-                [active-buffs* (merge-buffs (filter (λ (buff) (symbol=? (triggered-buff-trigger buff)
-                                                                        (attack->trigger attack)))
-                                                    (flat-char-trigger-buffs char))
-                                            active-buffs)]
-                ; remove buffs that, after duration passes, will expire
-                [active-buffs** (filter (λ (buff) (< 0 (triggered-buff-duration buff)))
-                                        (map (λ (buff) (make-triggered-buff (triggered-buff-effect buff)
-                                                                            (triggered-buff-trigger buff)
-                                                                            (triggered-buff-limit buff)
-                                                                            (triggered-buff-party-wide buff)
-                                                                            (- (triggered-buff-duration buff)
-                                                                               duration)))
-                                             active-buffs*))]
-                [action (cond [(list? attack) '()]
-                              [(or (symbol=? 'N attack) (symbol=? 'ND attack))
-                               (list-ref (attack-sequence-normals (flat-char-attacks char)) (sub1 nc))]
-                              [(symbol=? 'C attack) (attack-sequence-charged (flat-char-attacks char))]
-                              [(symbol=? 'E attack) (flat-char-skill char)]
-                              [(symbol=? 'Q attack) (flat-char-burst char)])]
-                [type (cond [(list? attack) '()]
-                            [(or (symbol=? 'N attack) (symbol=? 'ND attack) (symbol=? 'C attack))
-                             (attack-type action)]
-                            [(or (symbol=? 'E attack) (symbol=? 'Q attack))
-                             (flat-skill-type action)])]
-                [enemy-element* (cond [(list? attack) '()]
-                                      [(symbol=? type 'physical) enemy-element]
-                                      [(symbol=? enemy-element 'none) type]
-                                      [(symbol=? type enemy-element) enemy-element]
-                                      [else 'none])]; elements react, so clear
-                [attr (cond [(list? attack) '()]
-                            [(or (symbol=? 'N attack) (symbol=? 'ND attack) (symbol=? 'C attack))
-                             (attack-attr action)]
-                            [(or (symbol=? 'E attack) (symbol=? 'Q attack))
-                             (flat-skill-attr action)])]
-                [dmg* (if (list? attack)
-                          dmg
-                          (+ dmg
-                             ; stage 2, stage 3
-                             ;; generate-dmg-info is a complex way
-                             ;; to get all the modified stats + values needed to
-                             ;; calculate damage
-                             (calc-single-dmg (generate-dmg-info char
-                                                                 enemy
-                                                                 attack
-                                                                 nc
-                                                                 enemy-element
-                                                                 active-buffs*
-                                                                 type
-                                                                 attr))))]
-                [time* (+ time duration)])
-           (if (list? attack)
-               (if (= cc (second attack))
-                   ; swap to same = do nothing
-                   (calc-dmg/acc (make-acc-data team
-                                 enemy
-                                 (rest attack-string)
-                                 cc
-                                 nc
-                                 active-buffs
-                                 enemy-element
-                                 dmg
-                                 time))
-                   (calc-dmg/acc (make-acc-data team
-                                 enemy
-                                 (rest attack-string)
-                                 cc*
-                                 nc*
-                                 ; remove non-teamwide buffs
-                                 (filter triggered-buff-party-wide active-buffs**)
-                                 enemy-element
-                                 dmg
-                                 time*)))
-               (calc-dmg/acc (make-acc-data team
-                             enemy
-                             (rest attack-string)
-                             cc*
-                             nc*
-                             active-buffs**
-                             enemy-element*
-                             dmg*
-                             time*))))]))
+         (update-and-calculate acc-values)]))
 
 (define (attack->trigger attack)
   (match attack
@@ -316,10 +380,12 @@
                      (triggered-buff-duration triggered)))
 |#
 
+;; merge new buffs into existing buffs
 (define (merge-buffs new old)
   (cond [(empty? new) old]
         [(cons? new) (merge-buffs (rest new) (merge-buff* (first new) old))]))
 
+;; helper for merge-buffs
 (define (merge-buff* new old)
   (cond [(empty? old) (list (make-triggered-buff (triggered-buff-effect new)
                                                  (triggered-buff-trigger new)
@@ -330,6 +396,7 @@
                          (cons (merge-buff new (first old)) (rest old))
                          (cons (first old) (merge-buff* new (rest old))))]))
 
+;; performs the merge for a single buff
 (define (merge-buff new old)
   (let ([limit* (min (triggered-buff-limit new)
                      (+ 1 (triggered-buff-limit old)))]
@@ -342,10 +409,14 @@
                          (triggered-buff-party-wide new)
                          duration*)))
 
+;; checks if 2 triggered buffs are the same
 (define (triggered-buff=?* b1 b2)
-  (and (equal? (triggered-buff-effect b1) (triggered-buff-effect b2))
-       (equal? (triggered-buff-trigger b1) (triggered-buff-trigger b2))
-       (equal? (triggered-buff-party-wide b1) (triggered-buff-party-wide b2))))
+  (and (equal? (triggered-buff-effect b1)
+               (triggered-buff-effect b2))
+       (equal? (triggered-buff-trigger b1)
+               (triggered-buff-trigger b2))
+       (equal? (triggered-buff-party-wide b1)
+               (triggered-buff-party-wide b2))))
 
 ; stage 2
 (define (generate-dmg-info char enemy attack nc enemy-element active-buffs type attr)
@@ -369,6 +440,12 @@
      0.01
      (lookup-stat stats (percent-attr (attribute-modifier attr)))))
 
+;; applies all buffs of a specified category
+(define (apply-all-modifiers buffs base-stat-info attr-char symbol)
+  (+ attr-char
+     (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info))
+                   (get-mods-with-attr buffs symbol)))))
+
 ; do a tree traversal (abstract out, use symbols?) flat incr vs incr by other amt (atk (def% 50)) increases atk by 50% of base def
 (define (calc-total-stats char active-buffs)
   ; remember to scale % to decimal
@@ -383,33 +460,27 @@
     ; (stat flat)
     ; (stat (stat% percent))
     ; base stats + percent modifiers calculated (and flat mods too)
-    (make-stat-info (+ (flat-char-hp char) ; base hp
-                       (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info))
-                                     (get-mods-with-attr buffs 'hp))))
-                    (+ (flat-char-atk char) ; base atk
-                       (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info))
-                                     (get-mods-with-attr buffs 'atk))))
-                    (+ (flat-char-def char) ; base def
-                       (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info))
-                                     (get-mods-with-attr buffs 'def))))
-                    (+ (flat-char-critr char)
-                       (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info))
-                                     (get-mods-with-attr buffs 'critr))))
-                    (+ (flat-char-critd char)
-                       (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info))
-                                     (get-mods-with-attr buffs 'critd))))
-                    (+ (flat-char-em char)
-                       (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info))
-                                     (get-mods-with-attr buffs 'em)))))))
+    (make-stat-info (apply-all-modifiers buffs base-stat-info (flat-char-hp char) 'hp) 
+                    (apply-all-modifiers buffs base-stat-info (flat-char-atk char) 'atk)
+                    (apply-all-modifiers buffs base-stat-info (flat-char-def char) 'def)
+                    (apply-all-modifiers buffs base-stat-info (flat-char-critr char) 'critr)
+                    (apply-all-modifiers buffs base-stat-info (flat-char-critd char) 'critd)
+                    (apply-all-modifiers buffs base-stat-info (flat-char-em char) 'em))))
 
 (define (get-mods-with-attr buffs attr)
   ; convert to modifier
-  (map (λ (buff) (cond [(unconditional-buff? buff) (attribute-modifier (unconditional-buff-effect buff))]
-                       [(triggered-buff? buff) (attribute-modifier (triggered-buff-effect buff))]))
+  (map (λ (buff) (cond [(unconditional-buff? buff)
+                        (attribute-modifier (unconditional-buff-effect buff))]
+                       [(triggered-buff? buff)
+                        (attribute-modifier (triggered-buff-effect buff))]))
        (filter (λ (buff) (cond [(unconditional-buff? buff)
-                                (symbol=? (attribute-attr (unconditional-buff-effect buff)) attr)]
+                                (symbol=? (attribute-attr
+                                           (unconditional-buff-effect buff))
+                                          attr)]
                                [(triggered-buff? buff)
-                                (symbol=? (attribute-attr (triggered-buff-effect buff)) attr)]))
+                                (symbol=? (attribute-attr
+                                           (triggered-buff-effect buff))
+                                          attr)]))
                buffs)))
 
 
@@ -421,13 +492,13 @@
          (lookup-stat base-stats (percent-attr modifier)))))
 
 (define (lookup-stat stats attr)
-  (cond
-    [(symbol=? attr 'atk%) (stat-info-atk stats)]
-    [(symbol=? attr 'def%) (stat-info-def stats)]
-    [(symbol=? attr 'hp%) (stat-info-hp stats)]
-    [(symbol=? attr 'critr%) (stat-info-critr stats)]
-    [(symbol=? attr 'critd%) (stat-info-critd stats)]
-    [(symbol=? attr 'em) (stat-info-em stats)]
+  (case attr
+    ['atk% (stat-info-atk stats)]
+    ['def% (stat-info-def stats)]
+    ['hp% (stat-info-hp stats)]
+    ['critr% (stat-info-critr stats)]
+    ['critd% (stat-info-critd stats)]
+    ['em (stat-info-em stats)]
     ))
 
 (define (calc-res ress type)
@@ -437,15 +508,15 @@
           [else (- 1 res)])))
 
 (define (lookup-res ress type)
-  (cond
-    [(symbol=? type 'pyro) (resistances-pyro ress)]
-    [(symbol=? type 'hydro) (resistances-hydro ress)]
-    [(symbol=? type 'electro) (resistances-electro ress)]
-    [(symbol=? type 'cryo) (resistances-cryo ress)]
-    [(symbol=? type 'geo) (resistances-geo ress)]
-    [(symbol=? type 'anemo) (resistances-anemo ress)]
-    [(symbol=? type 'dendro) (resistances-dendro ress)]
-    [(symbol=? type 'physical) (resistances-physical ress)]
+  (case type
+    ['pyro (resistances-pyro ress)]
+    ['hydro (resistances-hydro ress)]
+    ['electro (resistances-electro ress)]
+    ['cryo (resistances-cryo ress)]
+    ['geo (resistances-geo ress)]
+    ['anemo (resistances-anemo ress)]
+    ['dendro (resistances-dendro ress)]
+    ['physical (resistances-physical ress)]
     ))
 
 ; amplifying reactions (transformatives DNE)

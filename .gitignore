@@ -1,1 +1,4 @@
 *.bak
+scribblings/*.html
+scribblings/*.js
+scribblings/*.css

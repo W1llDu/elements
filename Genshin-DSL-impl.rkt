@@ -248,16 +248,16 @@ enemy
              (if (hash? result)
                  (syntax-parse expr
                    [((~datum define-attack-sequence) name rest ...)
-                    (check-duplicates #'name result expr 'attack-sequence)
+                    (check-duplicates #'name result expr 'define-attack-sequence)
                     (update-hash 'attacks #'name result)]
                    [((~datum define-weapon) name rest ...)
-                    (check-duplicates #'name result expr 'weapons)
+                    (check-duplicates #'name result expr 'define-weapon)
                     (update-hash 'weapons #'name result)]
                    [((~datum define-skill) name rest ...)
-                    (check-duplicates #'name result expr 'skills)
+                    (check-duplicates #'name result expr 'define-skill)
                     (update-hash 'skills #'name result)]
                    [((~datum define-artifact) name rest ...)
-                    (check-duplicates #'name result expr 'artifacts)
+                    (check-duplicates #'name result expr 'define-artifact)
                     (update-hash 'artifacts #'name result)]
                    [((~datum define-character)
                      name _ _ _ _ _ _ _ _ _ _ _ _ _
@@ -266,13 +266,13 @@ enemy
                      skill*:id _
                      burst*:id _
                      artifacts* ...)
-                    (check-duplicates #'name result expr 'character)
+                    (check-duplicates #'name result expr 'define-character)
                     (update-hash 'characters #'name result)]
                    [((~datum define-enemy) name rest ...)
-                    (check-duplicates #'enemy result expr 'artifacts)
+                    (check-duplicates #'enemy result expr 'define-enemy)
                     (update-hash 'enemies #'name result)]
                    [((~datum define-team-lineup) name (chars ...))
-                    (check-duplicates #'team result expr 'artifacts)
+                    (check-duplicates #'team result expr 'define-team-lineup)
                     (update-hash 'teams #'name result)]
                    [((~datum calculate-rotation-damage) team* enemy* _) #t]) ;; nothing to check
                  result))

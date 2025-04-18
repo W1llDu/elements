@@ -1,6 +1,6 @@
 #lang racket
 
-(require "Genshin-DSL-impl.rkt")
+(require "main.rkt")
 
 (genshin-calc
 

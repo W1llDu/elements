@@ -13,9 +13,9 @@
          make-percent
          make-enemy
          make-resistances
+         display-data
          calc-dmg
-         clear-file
-         view-data)
+         clear-file)
 
 (define-struct character [hp def atk critr critd em attacks weapon skill burst artifacts] #:transparent)
 (define-struct weapon [atk substat buffs] #:transparent)
@@ -74,16 +74,13 @@
     (lambda (out) (void))
     #:exists 'truncate))
 
-(define (view-data)
-  raw-data)
 
 (define current-atk-string '())
-(define raw-data '())
 
 (define (calc-dmg team enemy attack-string)
   ; pull out party-wide uncond buffs into active-buffs
   (set! current-atk-string attack-string)
-  (display-data (make-acc-data (map flatten-char team) enemy attack-string 1 1 empty 'none 0 0)))
+  (calc-dmg/acc (make-acc-data (map flatten-char team) enemy attack-string 1 1 empty 'none 0 0)))
 
 ;; flatten unconditional buffs for easier representation
 (define (flatten-unconditional char)
@@ -165,8 +162,8 @@
   (/ (round (* 100 num)) 100))
 
 ;; calculate and display the results of a damage calculation
-(define (display-data acc-values)
-  (define result (calc-dmg/acc acc-values))
+(define (display-data team enemy attack-string)
+  (define result (calc-dmg team enemy attack-string))
   (define final-dmg (first result))
   (define final-time (second result))
   (define string-data (last (load-entries)))
@@ -359,7 +356,6 @@
   (define enemy (acc-data-enemy acc-values))
   (cond [(empty? attack-string)
          (save-entry (list current-atk-string dmg time enemy team))
-         (set! raw-data (list dmg time))
          (list dmg time)]
         [(cons? attack-string)
          (update-and-calculate acc-values)]))

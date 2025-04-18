@@ -210,6 +210,12 @@
      lineup
      enemy
      (attk ...)))
+ (host-interface/expression
+  (calculate-raw-rotation-damage lineup:team-lineup-bind enemy:enemy-bind (attk:attack-key ...))
+  #'(compile-calculate-raw-rotation-damage
+     lineup
+     enemy
+     (attk ...)))
 
  )
 
@@ -234,7 +240,7 @@ enemy
   ;; helper to check for duplicate names in the hash table
   (define (check-duplicates name result expr symbol)
     (when (member (syntax->datum name) (apply append (hash-values result)))
-                      (raise-syntax-error symbol "a duplicate name was found" expr name)))
+      (raise-syntax-error symbol "a duplicate name was found" expr name)))
 
   ;; helper to  update the hash table storing names
   (define (update-hash symbol name result)
@@ -274,7 +280,8 @@ enemy
                    [((~datum define-team-lineup) name (chars ...))
                     (check-duplicates #'team result expr 'define-team-lineup)
                     (update-hash 'teams #'name result)]
-                   [((~datum calculate-rotation-damage) team* enemy* _) #t]) ;; nothing to check
+                   [((~datum calculate-rotation-damage) team* enemy* _) #t]
+                   [((~datum calculate-raw-rotation-damage) team* enemy* _) #t]) ;; nothing to check
                  result))
            (hash 'attacks (list)
                  'weapons (list)
@@ -443,6 +450,12 @@ enemy
   (lambda (stx)
     (syntax-parse stx
       [(_ lineup:id enemy:id (attack-string ...))
+       #'(display-data lineup enemy (list 'attack-string ...))])))
+
+(define-syntax compile-calculate-raw-rotation-damage
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ lineup:id enemy:id (attack-string ...))
        #'(calc-dmg lineup enemy (list 'attack-string ...))])))
 
 (define-syntax clear-data-file
@@ -450,10 +463,10 @@ enemy
     (syntax-parse stx
       [(_) #'(clear-file)])))
 
-(define-syntax view-raw-data
-  (lambda (stx)
-    (syntax-parse stx
-      [(_) #'(view-data)])))
+#;(define-syntax view-raw-data
+    (lambda (stx)
+      (syntax-parse stx
+        [(_) #'(view-data)])))
 
 ;;;;;;;;;;;;;;;;;;;;;;
 #| (genshin-calc

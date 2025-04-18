@@ -33,12 +33,20 @@
 (syntax-spec
 
  (extension-class genshin-macro #:binding-space genshin)
- 
+ (binding-class weapon-bind #:description "weapon" #:binding-space genshin)
+ (binding-class skill-bind #:description "skill" #:binding-space genshin)
+ (binding-class artifact-bind #:description "artifact" #:binding-space genshin)
+ (binding-class attack-sequence-bind #:description "attack sequence" #:binding-space genshin)
+ (binding-class character-bind #:description "character" #:binding-space genshin)
+ (binding-class enemy-bind #:description "enemy" #:binding-space genshin)
+ (binding-class team-lineup-bind #:description "team lineup" #:binding-space genshin)
+
  (host-interface/definitions
-  (define-weapon name:id
+  (define-weapon name:weapon-bind
     damage:number
     attr:genshin-attribute
     buffs:buff ...)
+  #:binding (export name)
   #'(compile-define-weapon
      name
      damage
@@ -46,12 +54,13 @@
      buffs ...))
 
  (host-interface/definitions
-  (define-skill name:id
+  (define-skill name:skill-bind
     #:cooldown cd:number
     #:attr attr:base-attribute
     #:duration duration:number
     #:type type:element
     buffs:trigger-buff ...)
+  #:binding (export name)
   #'(compile-define-skill
      name
      #:cooldown cd
@@ -62,10 +71,11 @@
 
  (host-interface/definitions
   (define-attack-sequence
-    name:id
+    name:attack-sequence-bind
     ([attr:base-attribute duration:number type:element] ...
      #:charged  [attr2:base-attribute duration2:number type2:element]
      #:plunging [attr3:base-attribute duration3:number type3:element]))
+  #:binding (export name)
   #'(compile-define-attack-sequence
      name ([attr duration type] ...
            #:charged  [attr2 duration2 type2]
@@ -73,15 +83,61 @@
  
  (host-interface/definitions
   (define-artifact
-    name:id
+    name:artifact-bind
     set-name:string
     mattr:genshin-attribute
     sattr:genshin-attribute ...)
+  #:binding (export name)
   #'(compile-define-artifact
      name
      set-name
      mattr
      sattr ...))
+
+ (host-interface/definitions
+  (define-character
+    name:character-bind
+    #:hp hp:number #:def def:number #:atk atk:number
+    #:em em:number #:critr critr:number #:critd critd:number
+    #:attacks attacks:attack-sequence-bind #:weapon weapon:weapon-bind #:skill skill:skill-bind
+    #:burst burst:skill-bind #:artifacts artifacts:artifact-bind ...)
+  #:binding (export name)
+  #'(compile-define-character
+     name
+     #:hp hp #:def def #:atk atk
+     #:em em #:critr critr #:critd critd
+     #:attacks attacks #:weapon weapon #:skill skill
+     #:burst burst #:artifacts artifacts ...))
+
+ (host-interface/definitions
+  (define-enemy
+    name:enemy-bind #:def def:number
+    #:res (#:pyro pyro:number
+           #:hydro hydro:number
+           #:electro electro:number
+           #:cryo cryo:number
+           #:geo geo:number
+           #:anemo anemo:number
+           #:dendro dendro:number
+           #:physical physical:number)
+    #:reduction reduction:number)
+  #:binding (export name)
+  #'(compile-define-enemy
+     name #:def def
+     #:res (#:pyro pyro
+            #:hydro hydro
+            #:electro electro
+            #:cryo cryo
+            #:geo geo
+            #:anemo anemo
+            #:dendro dendro
+            #:physical physical)
+     #:reduction reduction))
+ 
+ (host-interface/definitions
+  (define-team-lineup name:team-lineup-bind (chars:character-bind ...))
+  #:binding (export name)
+  #'(compile-define-team-lineup name (chars ...)))
 
  (nonterminal stat
               critr ; flat
@@ -149,7 +205,7 @@
                                      #:duration duration:number]))
 
  (host-interface/expression
-  (calculate-rotation-damage lineup:id enemy:id (attk:attack-key ...))
+  (calculate-rotation-damage lineup:team-lineup-bind enemy:enemy-bind (attk:attack-key ...))
   #'(compile-calculate-rotation-damage
      lineup
      enemy
@@ -157,12 +213,13 @@
 
  )
 
+;; allows a proper sequencing of DSL code
 (define-syntax genshin-calc
   (lambda (stx)
     (syntax-parse stx
       [(_ exprs ...)
-       (check-types (attribute exprs))
-       #'(begin (display "Thanks for using ELEMENTS!\n\n") exprs ...)])))
+       (check-duplicate-names (attribute exprs))
+       #'(let () (display "Thanks for using ELEMENTS!\n\n") exprs ...)])))
 #|
    #:attacks
    #:weapon
@@ -174,86 +231,34 @@ enemy
 (begin-for-syntax
   (require racket/list)
 
-  (define (check-member expr result syn key checking)
-    (unless (member (syntax->datum syn) (hash-ref result key))
-           (raise-syntax-error checking
-                               (format "Incorrect data input for ~s" checking)
-                               expr
-                               syn)))
+  ;; helper to check for duplicate names in the hash table
+  (define (check-duplicates name result expr symbol)
+    (when (member (syntax->datum name) (apply append (hash-values result)))
+                      (raise-syntax-error symbol "a duplicate name was found" expr name)))
 
-  (define (check-character-syntax
-           result
-           name
-           attacks
-           weapon
-           skill
-           burst
-           artifacts
-           expr)
-    (define id 0)
-    (and (check-member expr result attacks 'attacks 'character)
-         (check-member expr result weapon 'weapons 'character)
-         (check-member expr result skill 'skills 'character)
-         (check-member expr result burst 'skills 'character)
-         ; artifact type uniqueness?
-         (andmap (λ (art)
-                   (check-member expr result art 'artifacts 'character))
-                 artifacts))
-    (hash-set result 'characters
+  ;; helper to  update the hash table storing names
+  (define (update-hash symbol name result)
+    (hash-set result
+              symbol
               (cons (syntax->datum name)
-                    (hash-ref result 'characters))))
+                    (hash-ref result symbol))))
 
-  (define (check-team-syntax result chars name expr)
-    (define id 0)
-    (andmap (λ (char) (check-member expr result char 'characters 'team))
-            chars)
-    (hash-set result 'teams (cons (syntax->datum name) (hash-ref result 'teams))))
-
-  (define (check-rotation-syntax result team enemy expr)
-    (define id 0)
-    (and (check-member expr result team 'teams 'calculate-damage-rotation)
-         (check-member expr result enemy 'enemies 'calculate-damage-rotation))
-    result
-    )
-
-  (define (find-duplicate value-list)
-    (cond [(empty? value-list) #f]
-          [(cons? value-list) (if (member (car value-list) (cdr value-list))
-                                  (car value-list)
-                                  (find-duplicate (cdr value-list)))]))
-  
-  (define (check-types exprs)
+  (define (check-duplicate-names exprs)
     (foldl (λ (expr result)
              (if (hash? result)
                  (syntax-parse expr
                    [((~datum define-attack-sequence) name rest ...)
-                    (when (member (syntax->datum #'name) (apply append (hash-values result)))
-                      (raise-syntax-error 'calc "a duplicate name was found" expr #'name))
-                    (hash-set result
-                              'attacks
-                              (cons (syntax->datum #'name)
-                                    (hash-ref result 'attacks)))]
+                    (check-duplicates #'name result expr 'attack-sequence)
+                    (update-hash 'attacks #'name result)]
                    [((~datum define-weapon) name rest ...)
-                    (when (member (syntax->datum #'name) (apply append (hash-values result)))
-                      (raise-syntax-error 'weapons "a duplicate name was found" expr #'name))
-                    (hash-set result
-                              'weapons
-                              (cons (syntax->datum #'name)
-                                    (hash-ref result 'weapons)))]
+                    (check-duplicates #'name result expr 'weapons)
+                    (update-hash 'weapons #'name result)]
                    [((~datum define-skill) name rest ...)
-                    (when (member (syntax->datum #'name) (apply append (hash-values result)))
-                      (raise-syntax-error 'skills "a duplicate name was found" expr #'name))
-                    (hash-set result
-                              'skills
-                              (cons (syntax->datum #'name)
-                                    (hash-ref result 'skills)))]
+                    (check-duplicates #'name result expr 'skills)
+                    (update-hash 'skills #'name result)]
                    [((~datum define-artifact) name rest ...)
-                    (when (member (syntax->datum #'name) (apply append (hash-values result)))
-                      (raise-syntax-error 'artifacts "a duplicate name was found" expr #'name))
-                    (hash-set result
-                              'artifacts
-                              (cons (syntax->datum #'name)
-                                    (hash-ref result 'artifacts)))]
+                    (check-duplicates #'name result expr 'artifacts)
+                    (update-hash 'artifacts #'name result)]
                    [((~datum define-character)
                      name _ _ _ _ _ _ _ _ _ _ _ _ _
                      attacks*:id _
@@ -261,26 +266,15 @@ enemy
                      skill*:id _
                      burst*:id _
                      artifacts* ...)
-                    (check-character-syntax
-                     result
-                     #'name
-                     #'attacks*
-                     #'weapon*
-                     #'skill*
-                     #'burst*
-                     (attribute artifacts*)
-                     expr)]
+                    (check-duplicates #'name result expr 'character)
+                    (update-hash 'characters #'name result)]
                    [((~datum define-enemy) name rest ...)
-                    (hash-set result
-                              'enemies
-                              (cons (syntax->datum #'name)
-                                    (hash-ref result 'enemies)))]
+                    (check-duplicates #'enemy result expr 'artifacts)
+                    (update-hash 'enemies #'name result)]
                    [((~datum define-team-lineup) name (chars ...))
-                    (check-team-syntax result
-                                       (attribute chars)
-                                       #'name expr)]
-                   [((~datum calculate-rotation-damage) team* enemy* _)
-                    (check-rotation-syntax result #'team* #'enemy* expr)])
+                    (check-duplicates #'team result expr 'artifacts)
+                    (update-hash 'teams #'name result)]
+                   [((~datum calculate-rotation-damage) team* enemy* _) #t]) ;; nothing to check
                  result))
            (hash 'attacks (list)
                  'weapons (list)
@@ -408,7 +402,7 @@ enemy
            (make-artifact set-name (parse-attribute mattr mstat)
                           (list (parse-attribute sattr sstat) ...)))])))
 
-(define-syntax define-character
+(define-syntax compile-define-character
   (lambda (stx)
     (syntax-parse stx
       [(_ name:id
@@ -420,7 +414,7 @@ enemy
                                       attacks weapon skill burst
                                       (list artifacts ...)))])))
 
-(define-syntax define-enemy
+(define-syntax compile-define-enemy
   (lambda (stx)
     (syntax-parse stx
       [(_ name:id #:def def:number
@@ -439,7 +433,7 @@ enemy
                                          geo anemo dendro physical)
                        reduction))])))
 
-(define-syntax define-team-lineup
+(define-syntax compile-define-team-lineup
   (lambda (stx)
     (syntax-parse stx
       [(_ name:id (chars:id ...))

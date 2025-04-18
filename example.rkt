@@ -72,7 +72,6 @@
    (def 128)
    )
 
-
  (define-character test-char
    #:hp 12000 ;; base hp
    #:def 500   ;; base def
@@ -130,7 +129,7 @@
 
 (module+ test
   (require rackunit syntax/macro-testing)
-  (check-exn #rx"character: Incorrect data input for character"
+  (check-exn #rx"define-attack-sequence: expected base-stat"
              (λ () (convert-compile-time-error
                     (genshin-calc
 
@@ -227,8 +226,8 @@
                         [(atk% 25) 0.2 physical]
                         [(atk% 125) 0.8 physical]
                         [(atk% 250) 1.5 physical]
-                        #:charged [(hp 5) 3.5 pyro]
-                        #:plunging [(hp 10) 3.5 physical]))
+                        #:charged [(hp% 5) 3.5 pyro]
+                        #:plunging [(hp% 10) 3.5 physical]))
 
 
                      (define-weapon attack-chain
@@ -257,7 +256,7 @@
                        (define-weapon test-weapon
                          450 ;; base attack stat
                          (critr 24.1) ;; substat (crit rate)
-                         (triggered-buff
+                         (triggered-buff 
                           [dmgup
                            #:effect (atk% 20.0) ;; increase atk by 20%
                            #:trigger normal-attack
@@ -364,8 +363,8 @@
                        (view-raw-data)) '(26081.90330288 5.699999999999999)))
 
 (module+ test
-  (require rackunit syntax/macro-testing)
-  (check-exn #rx"character: Incorrect data input for character"
+  (require rackunit syntax/macro-testing) 
+  (check-exn #rx"define-character: not bound as artifact"
              (λ () (convert-compile-time-error
                     (genshin-calc
 
@@ -374,17 +373,17 @@
                         [(atk% 25) 0.2 physical]
                         [(atk% 125) 0.8 physical]
                         [(atk% 250) 1.5 physical]
-                        #:charged [(hp 5) 3.5 pyro]
-                        #:plunging [(hp 10) 3.5 physical]))
+                        #:charged [(hp% 5) 3.5 pyro]
+                        #:plunging [(hp% 10) 3.5 physical]))
 
 
-                     (define-weapon test-weapon
+                     (define-weapon test-weapon 
                        450 ;; base attack stat
                        (critr 24.1) ;; substat (crit rate)
                        (triggered-buff
                         [dmgup
                          #:effect (atk% 20.0) ;; increase atk by 20%
-                         #:trigger 'normal-attack
+                         #:trigger normal-attack
                          #:limit 1
                          #:party-wide #f
                          #:duration 10.0])
@@ -397,7 +396,7 @@
 
                      ;; note : duration is optional
                      (define-skill all-attack-up
-                       25.0
+                       #:cooldown 25.0
                        #:attr (atk% 125)
                        #:duration 0.1
                        #:type pyro
@@ -410,7 +409,7 @@
                        )
 
                      (define-skill basic-slash
-                       5.0 ;; cooldown
+                       #:cooldown 5.0 ;; cooldown
                        #:attr (atk% 25)
                        #:duration 1.0 ;; duration (where character cannot do anything else)
                        #:type pyro

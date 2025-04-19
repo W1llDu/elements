@@ -183,17 +183,17 @@
 
  (nonterminal buff-attribute
     #:description "buff attribute"
-    (attr:stat value:number)
-    (attr:base-stat (sattr:percent-stat percent:number))
-    (attr:flat-stat (sattr:percent-stat percent:number)))
+    (buff attr:stat value:number)
+    (buff attr:base-stat (sattr:percent-stat percent:number))
+    (buff attr:flat-stat (sattr:percent-stat percent:number)))
 
-  (nonterminal modifier-attribute
-    #:description "modifier attribute"
-    (attr:stat percent:number))
+ (nonterminal modifier-attribute
+   #:description "modifier attribute"
+   (mod attr:stat percent:number))
 
-  (nonterminal damage-attribute
-    #:description "damage attribute"
-    (attr:percent-stat percent:number))
+ (nonterminal damage-attribute
+   #:description "damage attribute"
+   (dmg attr:percent-stat percent:number))
 
  (nonterminal trigger
               normal-attack
@@ -348,7 +348,7 @@ enemy
 (define-syntax compile-define-weapon
   (lambda (stx)
     (syntax-parse stx
-      [(_ name:id atk:number (attr modifier) buffs ...)
+      [(_ name:id atk:number ((~datum mod) attr modifier) buffs ...)
        #'(define name (make-weapon atk
                                    (parse-attribute attr modifier)
                                    (list (parse-buff buffs) ...)))])))
@@ -358,7 +358,7 @@ enemy
     (syntax-parse stx
       [(_ name:id
           #:cooldown cd:number
-          #:attr (attr modifier)
+          #:attr ((~datum dmg) attr modifier)
           #:duration duration:number
           #:type type buffs ...)
        #'(define name (make-skill cd
@@ -370,7 +370,7 @@ enemy
   (lambda (stx)
     (syntax-parse stx
       [(_ ((~datum triggered-buff) [name:id
-                                    #:effect (attr percent)
+                                    #:effect ((~datum buff) attr percent)
                                     #:trigger trigger
                                     #:limit limit:number
                                     #:party-wide party-wide:boolean
@@ -381,11 +381,11 @@ enemy
                               party-wide
                               duration)]
       [(_ ((~datum unconditional-buff) [name:id
-                                        #:effect (attr percent)
+                                        #:effect ((~datum buff) attr percent)
                                         #:party-wide party-wide:boolean]))
        #'(make-unconditional-buff (parse-attribute attr percent) party-wide)]
       [(_ ((~datum applied-buff) [name:id
-                                  #:effect (attr percent)
+                                  #:effect ((~datum buff) attr percent)
                                   #:limit limit:number
                                   #:party-wide party-wide:boolean
                                   #:duration duration]))
@@ -397,11 +397,11 @@ enemy
 (define-syntax compile-define-attack-sequence
   (lambda (stx)
     (syntax-parse stx
-      [(_ name:id ([(attr percent:number) duration:number type] ...
-                   #:charged  [(attr2 percent2:number)
+      [(_ name:id ([((~datum dmg) attr percent:number) duration:number type] ...
+                   #:charged  [((~datum dmg) attr2 percent2:number)
                                duration2:number
                                type2]
-                   #:plunging [(attr3 percent3:number)
+                   #:plunging [((~datum dmg) attr3 percent3:number)
                                duration3:number
                                type3]))
        #'(define name (make-attack-sequence
@@ -418,7 +418,7 @@ enemy
 (define-syntax compile-define-artifact
   (lambda (stx)
     (syntax-parse stx
-      [(_ name:id set-name:string (mattr mstat) (sattr sstat) ...)
+      [(_ name:id set-name:string ((~datum mod) mattr mstat) ((~datum mod) sattr sstat) ...)
        #'(define name
            (make-artifact set-name (parse-attribute mattr mstat)
                           (list (parse-attribute sattr sstat) ...)))])))

@@ -30,6 +30,30 @@
 
 (provide (all-defined-out))
 
+(begin-for-syntax
+
+  (define-syntax-class stat
+    (pattern flat:flat-stat)
+    (pattern base:base-stat)
+    (pattern percent:percent-stat))
+  
+  (define-syntax-class flat-stat
+    (pattern (~datum critr))
+    (pattern (~datum critd))
+    (pattern (~datum dmg%)))
+
+  (define-syntax-class base-stat
+    (pattern (~datum hp))
+    (pattern (~datum atk))
+    (pattern (~datum def))
+    (pattern (~datum em)))
+
+  (define-syntax-class percent-stat
+    (pattern (~datum hp%))
+    (pattern (~datum atk%))
+    (pattern (~datum def%))
+    (pattern (~datum em%))))
+
 (syntax-spec
 
  (extension-class genshin-macro #:binding-space genshin)
@@ -44,7 +68,7 @@
  (host-interface/definitions
   (define-weapon name:weapon-bind
     damage:number
-    attr:genshin-attribute
+    attr:modifier-attribute
     buffs:buff ...)
   #:binding (export name)
   #'(compile-define-weapon
@@ -56,7 +80,7 @@
  (host-interface/definitions
   (define-skill name:skill-bind
     #:cooldown cd:number
-    #:attr attr:base-attribute
+    #:attr attr:damage-attribute
     #:duration duration:number
     #:type type:element
     buffs:trigger-buff ...)
@@ -72,9 +96,9 @@
  (host-interface/definitions
   (define-attack-sequence
     name:attack-sequence-bind
-    ([attr:base-attribute duration:number type:element] ...
-     #:charged  [attr2:base-attribute duration2:number type2:element]
-     #:plunging [attr3:base-attribute duration3:number type3:element]))
+    ([attr:damage-attribute duration:number type:element] ...
+     #:charged  [attr2:damage-attribute duration2:number type2:element]
+     #:plunging [attr3:damage-attribute duration3:number type3:element]))
   #:binding (export name)
   #'(compile-define-attack-sequence
      name ([attr duration type] ...
@@ -85,8 +109,8 @@
   (define-artifact
     name:artifact-bind
     set-name:string
-    mattr:genshin-attribute
-    sattr:genshin-attribute ...)
+    mattr:modifier-attribute
+    sattr:modifier-attribute ...)
   #:binding (export name)
   #'(compile-define-artifact
      name
@@ -138,23 +162,6 @@
   (define-team-lineup name:team-lineup-bind (chars:character-bind ...))
   #:binding (export name)
   #'(compile-define-team-lineup name (chars ...)))
-
- (nonterminal stat
-              critr ; flat
-              critd ; flat
-              hp
-              atk
-              def
-              scaling:scaling-stat)
-
- (nonterminal scaling-stat
-              base:base-stat)
- 
- (nonterminal base-stat
-              hp% ; sugar
-              atk% ; sugar
-              def% ; sugar
-              em)
  
  (nonterminal attack-key
               N
@@ -174,12 +181,19 @@
               dendro
               physical)
 
- (nonterminal genshin-attribute
-              (attr:stat flat:number)
-              (attr:stat (sattr:scaling-stat percent:number)))
- 
- (nonterminal base-attribute
-              (attr:base-stat percent:number))
+ (nonterminal buff-attribute
+    #:description "buff attribute"
+    (attr:stat value:number)
+    (attr:base-stat (sattr:percent-stat percent:number))
+    (attr:flat-stat (sattr:percent-stat percent:number)))
+
+  (nonterminal modifier-attribute
+    #:description "modifier attribute"
+    (attr:stat percent:number))
+
+  (nonterminal damage-attribute
+    #:description "damage attribute"
+    (attr:percent-stat percent:number))
 
  (nonterminal trigger
               normal-attack
@@ -188,18 +202,18 @@
               burst)
 
  (nonterminal buff
-              (unconditional-buff [name:id #:effect attr:genshin-attribute
+              (unconditional-buff [name:id #:effect attr:buff-attribute
                                            #:party-wide party-wide:boolean])
               trigger:trigger-buff)
               
 
  (nonterminal trigger-buff
-              (triggered-buff [name:id #:effect attr:genshin-attribute
+              (triggered-buff [name:id #:effect attr:buff-attribute
                                        #:trigger t:trigger
                                        #:limit limit:number
                                        #:party-wide party-wide:boolean
                                        #:duration duration:number])
-              (applied-buff [name:id #:effect attr:genshin-attribute
+              (applied-buff [name:id #:effect attr:buff-attribute
                                      #:limit limit:number
                                      #:party-wide party-wide:boolean
                                      #:duration duration:number]))

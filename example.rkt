@@ -129,7 +129,7 @@
 
 (module+ test
   (require rackunit syntax/macro-testing)
-  (check-exn #rx"define-attack-sequence: expected base-stat"
+  (check-exn #rx"define-attack-sequence: expected damage attribute"
              (λ () (convert-compile-time-error
                     (genshin-calc
 

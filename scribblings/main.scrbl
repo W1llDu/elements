@@ -359,7 +359,7 @@ A @deftech{stat} is any attribute mentioned below.
  bast-stat
  crit-stat
  ]
-A @deftech{char-stat} is one of the 6 stats a character can have.
+A @deftech{char stat} is one of the 6 stats a character can have.
 
 
 @subsection{Base stats}

@@ -114,7 +114,6 @@ Here is a simple example that defines two similar characters, two lineups, and r
    )
 
  (define-enemy dummy
-   #|#:type Pyro|# ; for reactions
    #:def 1000
    #:res (#:pyro 50
           #:hydro 10

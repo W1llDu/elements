@@ -50,6 +50,7 @@
 
 ; final output: dmg, time, dmg/s
 
+; saves an entry to the save data file
 (define (save-entry entry)
   (call-with-output-file "data.txt"
     (lambda (out)
@@ -57,26 +58,31 @@
       (newline out))   
     #:exists 'append))
 
+; loads all information in the save data file
 (define (load-entries)
   (with-handlers ([exn:fail? (lambda (_) '())])
     (call-with-input-file "data.txt"
       (lambda (in)
         (read-lines '() in)))))
 
+; reads the lines of the save data file
 (define (read-lines entries in)
   (let ([line (read in)])
     (if (eof-object? line)
         (reverse entries)
         (read-lines (cons line entries) in))))
 
+; clears the save data file
 (define (clear-file)
   (call-with-output-file "data.txt"
     (lambda (out) (void))
     #:exists 'truncate))
 
 
+; used to remember the attack string for a calculation
 (define current-atk-string '())
 
+; calculate the total damage a team does to an enemy, given an attack string
 (define (calc-dmg team enemy attack-string)
   ; pull out party-wide uncond buffs into active-buffs
   (set! current-atk-string attack-string)
@@ -137,6 +143,7 @@
 (define (attr->unconditional attr)
   (make-unconditional-buff attr #f))
 
+; convert all applied buffs into triggered buffs to make calculation easier
 (define (applied->triggered applied trigger)
   (make-triggered-buff (applied-buff-effect applied)
                        trigger
@@ -429,6 +436,7 @@
                       (stat-info-critr stats)
                       (stat-info-critd stats))))
 
+; calculate the stat change 
 (define (calc-base-attr attr stats)
   ; ignore attribute-attr
   ; must be %?
@@ -479,7 +487,7 @@
                                           attr)]))
                buffs)))
 
-
+; calculate how much a modifer augments the given base stats
 (define (calc-modifier modifier base-stats)
   (if (number? modifier)
       modifier
@@ -487,6 +495,7 @@
          0.01
          (lookup-stat base-stats (percent-attr modifier)))))
 
+; match a stat symbol to its proper stat info
 (define (lookup-stat stats attr)
   (case attr
     ['atk% (stat-info-atk stats)]
@@ -497,12 +506,14 @@
     ['em (stat-info-em stats)]
     ))
 
+; calculate the resistance to a given element
 (define (calc-res ress type)
   (let ([res (/ (lookup-res ress type) 100)])
     (cond [(< res 0) (- 1 (/ res 2))]
           [(>= res 0.75) (/ 1 (+ (* 4 res) 1))]
           [else (- 1 res)])))
 
+; match an element symbol to its proper resistance
 (define (lookup-res ress type)
   (case type
     ['pyro (resistances-pyro ress)]
@@ -535,6 +546,7 @@
      (damage-info-amp-mult dmg)
      (calc-crit (min (damage-info-critr dmg) 100) (damage-info-critd dmg))))
 
+; determine the average bonus crit damage
 (define (calc-crit crit-rate crit-dmg)
   (+ (- 1 (/ crit-rate 100))
      (* (/ crit-rate 100)

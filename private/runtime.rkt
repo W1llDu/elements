@@ -1,5 +1,7 @@
 #lang racket
 
+(require "save-data.rkt")
+
 (provide make-character
          make-weapon
          make-skill
@@ -13,7 +15,6 @@
          make-percent
          make-enemy
          make-resistances
-         display-data
          calc-dmg
          clear-file)
 
@@ -50,43 +51,13 @@
 
 ; final output: dmg, time, dmg/s
 
-; saves an entry to the save data file
-(define (save-entry entry)
-  (call-with-output-file "data.txt"
-    (lambda (out)
-      (write entry out) 
-      (newline out))   
-    #:exists 'append))
-
-; loads all information in the save data file
-(define (load-entries)
-  (with-handlers ([exn:fail? (lambda (_) '())])
-    (call-with-input-file "data.txt"
-      (lambda (in)
-        (read-lines '() in)))))
-
-; reads the lines of the save data file
-(define (read-lines entries in)
-  (let ([line (read in)])
-    (if (eof-object? line)
-        (reverse entries)
-        (read-lines (cons line entries) in))))
-
-; clears the save data file
-(define (clear-file)
-  (call-with-output-file "data.txt"
-    (lambda (out) (void))
-    #:exists 'truncate))
-
-
-; used to remember the attack string for a calculation
-(define current-atk-string '())
-
 ; calculate the total damage a team does to an enemy, given an attack string
 (define (calc-dmg team enemy attack-string)
   ; pull out party-wide uncond buffs into active-buffs
-  (set! current-atk-string attack-string)
-  (calc-dmg/acc (make-acc-data (map flatten-char team) enemy attack-string 1 1 empty 'none 0 0)))
+  (define result (calc-dmg/acc (make-acc-data (map flatten-char team) enemy attack-string 1 1 empty 'none 0 0)))
+  ;; save the entry before returning it
+  (save-entry (list attack-string (first result) (second result) enemy team))
+  result)
 
 ;; flatten unconditional buffs for easier representation
 (define (flatten-unconditional char)
@@ -150,50 +121,6 @@
                        (applied-buff-limit applied)
                        (applied-buff-party-wide applied)
                        (applied-buff-duration applied)))
-
-;; checks for a more optimal damage rotation based on saved results
-(define (determine-current-optimal data-list curr-max team enemy)
-  (cond [(empty? data-list) curr-max]
-        [else (define entry (first data-list))
-              (define dps (/ (second entry)
-                             (third entry)))
-              (if (and (or (empty? curr-max) (> dps (/ (second curr-max)
-                                                       (third curr-max))))
-                       (equal? (fourth entry) team)
-                       (equal? (fifth entry) enemy))
-                  (determine-current-optimal (rest data-list) entry team enemy)
-                  (determine-current-optimal (rest data-list) curr-max team enemy))]))
-
-;; simple rounding function for displaying data
-(define (decimal-round num)
-  (/ (round (* 100 num)) 100))
-
-;; calculate and display the results of a damage calculation
-(define (display-data team enemy attack-string)
-  (define result (calc-dmg team enemy attack-string))
-  (define final-dmg (first result))
-  (define final-time (second result))
-  (define string-data (last (load-entries)))
-  (display "[]=======================================================================================[]\n")
-  (display "  Simulation run with input string: ")
-  (display current-atk-string)
-  (display "\n")
-  (display (format "  Total damage: ~a Total time: ~a seconds DPS: ~a\n"
-                   (decimal-round final-dmg)
-                   (decimal-round final-time)
-                   (decimal-round (/ final-dmg final-time)))) 
-  (display "\n\n")
-  (define best (determine-current-optimal (load-entries)
-                                          (list)
-                                          (fourth string-data)
-                                          (fifth string-data)))
-  (display (format "  The best run with this layout was a sequence of: ~a\n"
-                   (first best)))
-  (display (format "  Total damage: ~a Total time ~a seconds DPS: ~a\n"
-                   (decimal-round (second best))
-                   (decimal-round (third best))
-                   (decimal-round (/ (second best) (third best)))))
-  (display "[]=======================================================================================[]\n\n"))
 
 ;; calculate the duration of the current attack
 (define (calc-duration acc-values char attack)
@@ -362,7 +289,6 @@
   (define team (acc-data-team acc-values))
   (define enemy (acc-data-enemy acc-values))
   (cond [(empty? attack-string)
-         (save-entry (list current-atk-string dmg time enemy team))
          (list dmg time)]
         [(cons? attack-string)
          (update-and-calculate acc-values)]))

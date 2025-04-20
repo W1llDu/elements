@@ -27,6 +27,7 @@
          syntax-spec-v3
          "private/runtime.rkt"
          "private/compile.rkt"
+         "private/display.rkt"
          #;racket/hash)
 
 (provide (all-defined-out))
@@ -408,7 +409,7 @@
   (lambda (stx)
     (syntax-parse stx
       [(_ lineup:id enemy:id (attack-string ...))
-       #'(display-data lineup enemy (list 'attack-string ...))])))
+       #'(display-data (calc-dmg lineup enemy (list 'attack-string ...)) (list 'attack-string ...))])))
 
 (define-syntax compile-calculate-raw-rotation-damage
   (lambda (stx)

@@ -6,7 +6,7 @@
                "syntax-spec-v3"
                "syntax/parse"
                "scribble/example"
-               #;"syntax/to-string"
-               #;"racket/hash"))
+               "racket/hash"
+               #;"syntax/to-string"))
 (define license 'MIT)
 (define scribblings '(("scribblings/main.scrbl" () (experimental) "elements")))

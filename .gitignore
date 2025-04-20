@@ -2,6 +2,6 @@
 scribblings/*.html
 scribblings/*.js
 scribblings/*.css
-compiled
-scribblings/compiled
-private/compiled
+compiled/
+scribblings/compiled/
+private/compiled/

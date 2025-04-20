@@ -10,6 +10,7 @@
 |#
 
 ;; checks for a more optimal damage rotation based on saved results
+;; (List Any) (List Any) Team Enemy -> (List Any)
 (define (determine-current-optimal data-list curr-max team enemy)
   (cond [(empty? data-list) curr-max]
         [else (define entry (first data-list))
@@ -23,10 +24,12 @@
                   (determine-current-optimal (rest data-list) curr-max team enemy))]))
 
 ;; simple rounding function for displaying data
+;; Number -> Number
 (define (decimal-round num)
   (/ (round (* 100 num)) 100))
 
 ;; calculate and display the results of a damage calculation
+;; (List Number) (List Symbol) -> Void
 (define (display-data result attack-string)
   (define final-dmg (first result))
   (define final-time (second result))

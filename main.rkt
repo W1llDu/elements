@@ -189,7 +189,7 @@
 
  (nonterminal modifier-attribute
    #:description "modifier attribute"
-   (mod attr:stat percent:number))
+   (mod attr:stat value:number))
 
  (nonterminal damage-attribute
    #:description "damage attribute"

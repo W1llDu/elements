@@ -341,7 +341,7 @@ A @deftech{trigger buff} augments characters, but unlike conditionals, is not al
 }
 
 @section{Stats}
-Every character has a set of @deftech{stats}, which can either be modified, or be used to calculate and modify damage.
+Every character has a set of stats, which can either be modified, or be used to calculate and modify damage.
 Additionally, characters can equip a weapon and multiple artifacts to further augment that stats they already have.
 
 
@@ -398,7 +398,7 @@ A @deftech{char-stat} is one of the 6 stats a character can have.
                @defidform[#:kind percent-stat-syntax def%]
                @defidform[#:kind percent-stat-syntax em%]
                )]{
- A @deftech{percent stat} a percent scaling of a @tech{base stat}, rather than the base stat itself.
+ A @deftech{percent stat} is a percent scaling of a @tech{base stat}, rather than the base stat itself.
 }
 
 @section{Attributes}

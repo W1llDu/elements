@@ -342,7 +342,7 @@ A @deftech{trigger buff} augments characters, but unlike conditionals, is not al
 }
 
 @section{Stats}
-Every character has a set of stats, which can either be modified, or be used to calculate and modify damage.
+Every character has a set of @deftech{stats}, which can either be modified, or be used to calculate and modify damage.
 Additionally, characters can equip a weapon and multiple artifacts to further augment that stats they already have.
 
 
@@ -383,21 +383,30 @@ Additionally, characters can equip a weapon and multiple artifacts to further au
   em%]
  ]
 
-All @deftech{stat}s can be increased by a flat value.
+All @tech{stats} can be increased by a flat value.
 
 @subsection{Char stats}
-A @deftech{char stat} is one of the six stats a @tech{character} can have.
+A @deftech{char stat} is one of the six stats a @tech{character} can have, which are the @tech{base stats} and @tech{crit stats}.
 
 @subsection{Scaling stats}
-A @deftech{scaling stat} is a stat that can scale off of a @tech{percent stat}.
+A @deftech{scaling stat} is a stat that can scale off of a @tech{percent stat}. They are either a @tech{base stat}, or a flat increase to damage, @racket[dmg].
 
 @subsection{Base stats}
-A @deftech{base stat} is one of a character's main stat attributes.
+A @deftech{base stat} is one of a character's main stat attributes. They consist of @racket[hp], @racket[atk], @racket[def], and @racket[em],
+representing hit points, attack, defense, and elemental mastery. 
 
-They have corresponding @deftech{percent stat}s that @tech{scaling stat}s scale off of.
+They have corresponding @tech{percent stats} that @tech{scaling stats} scale off of. 
 
 @subsection{Flat stats}
-A @deftech{flat stat} is a stat that can only increase by a flat value. They are either a @deftech{crit stat} or @racket{dmg%}
+A @deftech{flat stat} is a stat that can only increase by a flat value. They are either a @tech{crit stat} or an increase to percent damage, @racket[dmg%].
+
+@subsection{Crit stats}
+A @deftech{crit stat} is a stat related to  characters critical strikes. They consist of @racket[critr], representing a character's chance to perform a critical strike,
+and @racket[critr], representing the multipler of the critical strike's damage. 
+
+@subsection{Percent stat}
+A @deftech{percent stat} is the percent counterpart of a @tech{base stat}, and represent a percentage of their counterpart.
+They consist of @racket[hp%], @racket[atk%], @racket[def%], and @racket[em%].
 
 @section{Attributes}
 An @deftech{attribute} is a calculation that depends on one or more @tech{stats}. There are multiple variations depending on the action that attribute is being used to perform.

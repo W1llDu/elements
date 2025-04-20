@@ -23,13 +23,12 @@ Here is a simple example that defines two similar characters, two lineups, and r
     #:charged [(dmg hp% 5) 3.5 pyro]
     #:plunging [(dmg hp% 10) 3.5 physical]))
 
-
  (define-weapon test-weapon
    450 ;; base attack stat
    (mod critr 24.1) ;; substat (crit rate)
    (triggered-buff
     [dmgup
-     #:effect (buff atk% 20.0) ;; increase atk by 20%
+     #:effect (buff atk% 20.0) 
      #:trigger normal-attack
      #:limit 1
      #:party-wide #f
@@ -37,11 +36,10 @@ Here is a simple example that defines two similar characters, two lineups, and r
 
    (unconditional-buff
     [crit-up
-     #:effect (buff critd 20) ;; increase crit damage by 20%
+     #:effect (buff critd 20) 
      #:party-wide #f])
    )
 
- ;; note : duration is optional
  (define-skill all-attack-up
    #:cooldown 25.0
    #:attr (dmg atk% 125)
@@ -65,50 +63,50 @@ Here is a simple example that defines two similar characters, two lineups, and r
      #:effect (buff hp 20)
      #:limit 1
      #:party-wide #f
-     #:duration 10.0]) ;; increase hp by 10% of atk, only applies to current character
+     #:duration 10.0]) 
    )
 
  (define-artifact test-feather
-   "cool feather collection" ;; set name
-   (mod atk 325) ;; main stat
-   (mod atk 27) ;; substats
+   "cool feather collection" 
+   (mod atk 325) 
+   (mod atk 27) 
    (mod em 42)
    )
 
  (define-artifact test-goblet
-   "cool goblet collection" ;; set name
-   (mod critr 46.6) ;; main stat
-   (mod critd 16.2) ;; substats
+   "cool goblet collection" 
+   (mod critr 46.6) 
+   (mod critd 16.2) 
    (mod critr 3.0)
    (mod def 128)
    )
 
  (define-character test-char
-   #:hp 12000 ;; base hp
-   #:def 500   ;; base def
-   #:atk 900   ;; base atk
-   #:em 20    ;; base em
-   #:critr 5     ;; base crit rate
-   #:critd 50    ;; base crit damage
+   #:hp 12000 
+   #:def 500   
+   #:atk 900   
+   #:em 20    
+   #:critr 5     
+   #:critd 50    
    #:attacks attack-chain
-   #:weapon test-weapon ;; weapon
-   #:skill basic-slash ;; skill
-   #:burst all-attack-up ;; burst
+   #:weapon test-weapon 
+   #:skill basic-slash 
+   #:burst all-attack-up 
    #:artifacts test-feather
    test-goblet
    )
 
  (define-character test-char2
-   #:hp 12000 ;; base hp
-   #:def 500   ;; base def
-   #:atk 900   ;; base atk
-   #:em 20    ;; base em
-   #:critr 25     ;; base crit rate
-   #:critd 50    ;; base crit damage
+   #:hp 12000 
+   #:def 500   
+   #:atk 900   
+   #:em 20    
+   #:critr 25     
+   #:critd 50    
    #:attacks attack-chain
-   #:weapon test-weapon ;; weapon
-   #:skill basic-slash ;; skill
-   #:burst all-attack-up ;; burst
+   #:weapon test-weapon
+   #:skill basic-slash 
+   #:burst all-attack-up
    #:artifacts test-feather
    test-goblet
    )

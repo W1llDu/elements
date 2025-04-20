@@ -1,40 +1,116 @@
 #lang scribble/manual 
 
-@(require (for-label racket ELEMENTS))
+@(require scribble/example (for-syntax racket/base) (for-label racket elements))
 
-@title{ELEMENTS: A DSL for optimizing and calculating Genshin Impact damage rotations}
+@; Create an evaluator to use for examples blocks with the DSL required.
+@(define eval (make-base-eval '(require racket elements)))
 
-@defmodule[ELEMENTS]
+@; A helper for creating references to forms defined in a binding space.
+@(define-syntax (racket/space stx)
+   (syntax-case stx ()
+     [(_ id space)
+      #'(racket #,((make-interned-syntax-introducer (syntax-e #'space)) #'id))]))
 
+@title{elements: A DSL for optimizing and calculating Genshin Impact damage rotations}
+@author+email["Joshua Goldberg" "goldberg.josh@northeastern.edu"]@linebreak[]
+@author+email["Will Du" "du.wi@northeastern.edu"]
+
+@defmodule[elements]
+@link["https://genshin.hoyoverse.com/en/"]{Genshin Impact} is an open world RPG released in 2020. In the game, you control a team of up to 4 characters, and engage in various levels of combat, with the goal typically being to clear content as fast as possible, requiring efficient damage rotations to do so.
+This package implements a damage calculator as a hosted DSL. With @tt{elements}, you can easily define the basics of a team lineup, including weapons, elemental skills, and characters.
+From there, you can setup damage rotations against enemies of varying toughness, and calculate potential damage output. Additionally, @tt{elements} compares old rotations to newer ones,
+allowing you to easily keep track of what combination has provided the highest sustained damage. 
 
 @defform[(genshin-calc expr ...)]{
 
-Used to compile every @deftech{expr} within it. Required for proper error checking. 
+Used to compile every @deftech{expr} within it. Required for proper compile-time error checking. 
 
 }
 
-@defform[(define-weapon name damage attr buffs ...)]{
+@defform[(define-weapon name damage attr buffs ...)
+         #:contracts ([name identifier?]
+                      [damage number?]
+                      [attr modifier-attribute?]
+                      [buffs buff?])]{
 
 Defines a weapon with a damage number that buffs a characters stats based on the given @tech{modifier attribute} @racket[attr]. The weapon also has a list of @tech{buffs}.
 
 }
+@examples[#:eval eval #:label #f
+          (define-weapon wolfs-gravestone
+            550
+            (mod critr 24.1)
+            (triggered-buff
+             [dmgup
+              #:effect (buff atk% 20.0)
+              #:trigger normal-attack
+              #:limit 1
+              #:party-wide #f
+              #:duration 10.0])
+            (unconditional-buff
+             [crit-up
+              #:effect (buff critd 20)
+              #:party-wide #f])
+            )]
 
 @defform[(define-skill name
            #:cooldown cd
            #:attr attr
            #:duration duration
            #:type type
-           buffs ...)]{
+           buffs ...)
+         #:contracts ([name identifier?]
+                      [cd number?]
+                      [attr dmg-attribute?]
+                      [duration number?]
+                      [type element?]
+                      [buffs buff?])]{
 
 Defines a character skill/burst that has a cooldown, duration, and a list of @tech{buffs}. The skill also deals damage based on the given @tech{damage attribute} @racket[attr].
                                                                                                                    
 
 }
+@examples[#:eval eval #:label #f
+          (define-skill all-attack-up
+            #:cooldown 25.0
+            #:attr (dmg atk% 125)
+            #:duration 0.1
+            #:type pyro
+            (applied-buff
+             [skill-atkup
+              #:effect (buff atk 125)
+              #:limit 1
+              #:party-wide #t
+              #:duration 10])
+            )
+
+          (define-skill basic-slash
+            #:cooldown 5.0
+            #:attr (dmg atk% 25)
+            #:duration 1.0
+            #:type pyro
+            (applied-buff
+             [skill-hpup
+              #:effect (buff hp 20)
+              #:limit 1
+              #:party-wide #f
+              #:duration 10.0])
+            )]
 
 @defform[(define-attack-sequence name
            ([attr duration type] ...
             #:charged  [attr2 duration2 type2]
-            #:plunging [attr3 duration3 type3]))]{
+            #:plunging [attr3 duration3 type3]))
+         #:contracts ([name identifier?]
+                      [attr dmg-attribute?]
+                      [duration number?]
+                      [type element?]
+                      [attr2 dmg-attribute?]
+                      [duration2 number?]
+                      [type2 element?]
+                      [attr3 dmg-attribute?]
+                      [duration3 number?]
+                      [type3 element?])]{
 
  Defines a character's attack sequence. Each attack has its own unique duration and an @tech{element} @racket[type]. Attacks deal damage
  based on the given @tech{damage attribute} @racket[attr].                                                                                     
@@ -42,24 +118,98 @@ Defines a character skill/burst that has a cooldown, duration, and a list of @te
 
 }
 
+@examples[#:eval eval #:label #f
+          (define-attack-sequence attack-chain
+            ([(dmg atk% 10) 0.5 physical]
+             [(dmg atk% 25) 0.2 physical]
+             [(dmg atk% 125) 0.8 physical]
+             [(dmg atk% 250) 1.5 physical]
+             #:charged [(dmg hp% 5) 3.5 pyro]
+             #:plunging [(dmg hp% 10) 3.5 physical]))]
+
 @defform[(define-artifact name
            set-name
            main-attr
-           sub-attr ...)]{
+           sub-attr ...)
+         #:contracts ([name identifier?]
+                      [set-name string?]
+                      [main-attr modifier-attribute?]
+                      [sub-attr modifier-attribute?])]{
 
- Temp Description
+ Defines an artifact piece. Artifacts belong to a set, specified by the string provided by @racket[set-name]. Each artifact also augments a character's @tech{stats} with a
+ @tech{modifier attribute} @racket[main-attr], as well as a list of more @tech{modifier attribute} sub attributes.                                                                                        
 
 }
+
+@examples[#:eval eval #:label #f
+          (define-artifact test-feather
+            "cool feather collection"
+            (mod atk 325)
+            (mod atk 27)
+            (mod em 42)
+            )
+
+          (define-artifact test-goblet
+            "cool goblet collection" 
+            (mod critr 46.6) 
+            (mod critd 16.2) 
+            (mod critr 3.0)
+            (mod def 128)
+            )]
+ 
 
 @defform[(define-character name
            #:hp hp #:def def #:atk atk
            #:em em #:critr critr #:critd critd
            #:attacks attacks #:weapon weapon #:skill skill
-           #:burst burst #:artifacts artifacts ...)]{
+           #:burst burst #:artifacts artifacts ...)
+         #:contracts ([name identifier?]
+                      [hp number?]
+                      [def number?]
+                      [atk number?]
+                      [em number?]
+                      [critr number?]
+                      [critd number?]
+                      [attacks identifier?]
+                      [weapon identifier?]
+                      [skill identifier?]
+                      [burst identifier?]
+                      [artifacts identifier?])]{
 
- Temp Description
+ Defines a character that has a list of @tech{base stats} numbers, and the name of an attack string, weapon, skill, burst, and list of artifacts.
+ Names must be defined with their respective "define-" type in order to be properly assigned to a character.
 
 }
+
+@examples[#:eval eval #:label #f
+          (define-character test-char
+            #:hp 12000
+            #:def 500
+            #:atk 900
+            #:em 20 
+            #:critr 5
+            #:critd 50
+            #:attacks attack-chain
+            #:weapon wolfs-gravestone
+            #:skill basic-slash
+            #:burst all-attack-up
+            #:artifacts test-feather
+            test-goblet
+            )
+
+          (define-character test-char2
+            #:hp 9000
+            #:def 5000
+            #:atk 200
+            #:em 10
+            #:critr 80 
+            #:critd 300 
+            #:attacks attack-chain
+            #:weapon wolfs-gravestone 
+            #:skill basic-slash 
+            #:burst all-attack-up 
+            #:artifacts test-feather
+            )]
 
 @defform[(define-enemy name
            #:def def
@@ -71,29 +221,73 @@ Defines a character skill/burst that has a cooldown, duration, and a list of @te
                   #:anemo anemo
                   #:dendro dendro
                   #:physical physical)
-           #:reduction reduction)]{
+           #:reduction reduction)
+         #:contracts ([name identifier?]
+                      [pyro number?]
+                      [hydro number?]
+                      [electro number?]
+                      [geo number?]
+                      [anemo number?]
+                      [dendro number?]
+                      [physical number?]
+                      [reduction number?])]{
 
- Temp Description
-
-}
-
-@defform[(define-team-lineup name (chars ...))]{
-
- Temp Description
-
-}
-
-@defform[(calculate-rotation-damage lineup enemy (attk ...))]{
-
- Temp Description
+ Defines an enemy that has numbers representing their defense, resistances to @tech{elements}, and overall damage reduction.
 
 }
 
-@defform[(calculate-raw-rotation-damage lineup enemy (attk ...))]{
+@examples[#:eval eval #:label #f
+          (define-enemy dummy
+            #:def 1000
+            #:res (#:pyro 50
+                   #:hydro 10
+                   #:electro 10
+                   #:cryo 10
+                   #:geo 10
+                   #:anemo 10
+                   #:dendro 10
+                   #:physical -20)
+            #:reduction 5
+            )]
 
- Temp Description
+@defform[(define-team-lineup name (chars ...))
+         #:contracts ([name identifier?]
+                      [chars identifier?])]{
+
+ Defines a team lineup that consists of a list of characters, which is used to calculate damage rotations.
 
 }
+
+@examples[#:eval eval #:label #f
+          (define-team-lineup lone-member (test-char))
+          (define-team-lineup two-members (test-char test-char2))]
+
+@defform[(calculate-rotation-damage lineup enemy (attk ...))
+         #:contracts ([lineup identifier?]
+                      [enemy identifier?]
+                      [attk attack-key?])]{
+
+ Calculates and displays the amount of damage done by a team lineup against a specified enemy, given a list of @tech{attack keys} specifying character actions. Also
+ compares the result to previous entries with the same lineup and enemy, and displays the best saved calculation.
+
+}
+
+@examples[#:eval eval #:label #f
+          (calculate-rotation-damage lone-member dummy (N C C C N N N N N N ND C))
+          (calculate-rotation-damage two-members dummy (E Q N N N N (Swap 1) N N N ND))]
+
+@defform[(calculate-raw-rotation-damage lineup enemy (attk ...))
+         #:contracts ([lineup identifier?]
+                      [enemy identifier?]
+                      [attk attack-key?])]{
+
+ Calculates and displays the unformatted amount of damage done by a team lineup against a specified enemy, given a list of @tech{attack keys} specifying character actions.
+
+}
+
+@examples[#:eval eval #:label #f
+          (calculate-raw-rotation-damage lone-member dummy (N C C C N N N N N N ND C))
+          (calculate-raw-rotation-damage two-members dummy (E Q N N N N (Swap 1) N N N ND))]
 
 @section{Buffs}
 @(define buff-syntax "buff syntax")
@@ -150,16 +344,16 @@ Every character has a set of @deftech{stats}, which can either be modified, or b
 Additionally, characters can equip a weapon and multiple artifacts to further augment that stats they already have.
 
 @subsection{Base stats}
-A @deftech{base stat} is one of a characters main stat attributes. They consist of @racket[hp], @racket[def], @racket[atk], or @racket[em],
+A @deftech{base stat} is one of a characters main stat attributes. They consist of @racket[hp], @racket[def], @racket[atk], and @racket[em],
 and represent a characters hit points, defense, attack, and elemental mastery respectively.
 
 @subsection{Percent stats}
 A @deftech{percent stat} a percent scaling of a @tech{base stat}, rather than the base stat itself.
-They consist of @racket[hp%], @racket[def%], @racket[atk%], or @racket[em%].
+They consist of @racket/space[hp% ELEMENTS], @racket[def%], @racket[atk%], and @racket[em%].
 
 @subsection{Flat stats}
 A @deftech{flat stat} is similar to a @tech{base stat}, but does not have a @tech{percent stat} counterpart.
-They consist of @racket[critr], @racket[critd], or @racket[dmg%], and represent a characters critical rate, critical damage, and percent damage bonus respectively. 
+They consist of @racket[critr], @racket[critd], and @racket[dmg%], and represent a characters critical rate, critical damage, and percent damage bonus respectively. 
 
 @section{Attributes}
 An @deftech{attribute} is a calculation that depends on one or more @tech{stats}. There are multiple variations depending on the action that attribute is being used to perform.
@@ -196,24 +390,52 @@ A @deftech{damage attribute} indicates what @tech{stat} to scale an instance of 
 }
 
 @section{Attack keys}
-Attack strings are composed of multiple different attacks, and each attack is represented with an @deftech{attack key}. Attack keys consist of @racketidfont{N}, @racketidfont{C},
-@racketidfont{E}, @racketidfont{Q}, or @racketidfont{ND}, and represent a normal attack, charged attack, skill use, burst use, or a dash canceled normal attack respectively. It may also be a
-@racket[Swap].
+Attack strings are composed of multiple different attacks, and each attack is represented with an @deftech{attack key}. Attack keys can be one of @racket[N], @racket[C],
+@racket[E], @racket[Q], @racket[ND], or @racket[Swap].
+@deftogether[(
+  @defidform[#:kind attack-key-syntax N]
+  @defidform[#:kind attack-key-syntax C]
+  @defidform[#:kind attack-key-syntax E]
+  @defidform[#:kind attack-key-syntax Q]
+  @defidform[#:kind attack-key-syntax ND]
+)]
+Syntax for a normal attack, charged attack, skill use, burst use, and dash canceled normal attack.
+
 @(define attack-key-syntax "attack key syntax")
 @defform[(Swap char-index)]{
 
  Performs a character swap, switching from the current character in the lineup to the character at index @racket[char-index] in the lineup. 
-
+                                                                                                         
 }
 
 
 @section{Elements}
+@(define element-syntax "element syntax")
 All attacks and damage instances have an @deftech{element} type associated with them. These elements mainly serve to amplify damage in the event one or more elements is applied to an enemy at a time.
-An element can be @racketidfont{pyro}, @racketidfont{hydro}, @racketidfont{cryo}, @racketidfont{electro}, @racketidfont{geo}, @racketidfont{anemo}, @racketidfont{dendro}, or @racketidfont{physical},
-each representing their respective in-game element. 
+Elements can be one of @racket[pyro], @racket[hydro], @racket[cryo], @racket[electro], @racket[geo], @racket[anemo], @racket[dendro], or @racket[physical].
+@deftogether[(
+  @defidform[#:kind element-syntax pyro]
+  @defidform[#:kind element-syntax hydro]
+  @defidform[#:kind element-syntax cryo]
+  @defidform[#:kind element-syntax electro]
+  @defidform[#:kind element-syntax geo]
+  @defidform[#:kind element-syntax anemo]
+  @defidform[#:kind element-syntax dendro]
+  @defidform[#:kind element-syntax physical]
+)]
+Syntax for element types, representing their in-game equivalents.  
 
 @section{Triggers}
+@(define trigger-syntax "trigger syntax")
+
 A @deftech{trigger} is an action performed by a character that may activate a @racket[triggered-buff]. If a trigger matches the trigger of a trigger-buff, then the buff will activate.
-Trigger actions include @racketidfont{normal-attack}, @racketidfont{charged-attack}, @racketidfont{skill},
-or @racketidfont{burst}, which represent the character doing a normal attack, charged attack, skill activation, or burst activation respectively. 
+Triggers can be one of @racket[normal-attack], @racket[charged-attack], @racket[skill], or @racket[burst].
+@deftogether[(
+  @defidform[#:kind trigger-syntax normal-attack]
+  @defidform[#:kind trigger-syntax charged-attack]
+  @defidform[#:kind trigger-syntax skill]
+  @defidform[#:kind trigger-syntax burst]
+)]
+Syntax for a normal attack trigger, charged attack trigger, skill use trigger, and burst use trigger.  
+
 

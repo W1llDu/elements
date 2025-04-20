@@ -235,7 +235,7 @@
                  (define-team-lineup two-members (test-char test-char2))
                  (define-team-lineup lone-member (test-char))
                  (calculate-raw-rotation-damage two-members dummy (E Q N N N N (Swap 1) N N N ND)))
-                '(26081.90330288 5.699999999999999)))
+                '(28094.508950860003 5.699999999999999)))
 
 (module+ test
   (require rackunit syntax/macro-testing) 
@@ -470,4 +470,4 @@
                                (define-team-lineup two-members (test-char test-char2))
                                (define-team-lineup lone-member (test-char))
                                (calculate-raw-rotation-damage two-members dummy (N))))))
-                '(279.12224384 0.5)))
+                '(300.6606644800001 0.5)))

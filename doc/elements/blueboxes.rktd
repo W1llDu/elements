@@ -1,12 +1,12 @@
-2259
-((3) 0 () 1 ((q lib "elements/main.rkt")) () (h ! (equal) ((c form c (c (? . 0) q geo)) q (4150 . 2)) ((c form c (c (? . 0) q C)) q (3959 . 2)) ((c form c (c (? . 0) q charged-attack)) q (4265 . 2)) ((c form c (c (? . 0) q pyro)) q (4066 . 2)) ((c form c (c (? . 0) q anemo)) q (4169 . 2)) ((c form c (c (? . 0) q applied-buff)) q (3167 . 10)) ((c form c (c (? . 0) q define-skill)) q (192 . 14)) ((c form c (c (? . 0) q electro)) q (4127 . 2)) ((c form c (c (? . 0) q normal-attack)) q (4236 . 2)) ((c form c (c (? . 0) q dendro)) q (4190 . 2)) ((c form c (c (? . 0) q triggered-buff)) q (2719 . 12)) ((c form c (c (? . 0) q E)) q (3979 . 2)) ((c form c (c (? . 0) q atk)) q (3543 . 2)) ((c form c (c (? . 0) q N)) q (3939 . 2)) ((c form c (c (? . 0) q dmg%)) q (3749 . 2)) ((c form c (c (? . 0) q define-enemy)) q (1585 . 22)) ((c form c (c (? . 0) q em%)) q (3679 . 2)) ((c form c (c (? . 0) q hydro)) q (4086 . 2)) ((c form c (c (? . 0) q buff)) q (3771 . 3)) ((c form c (c (? . 0) q def)) q (3564 . 2)) ((c form c (c (? . 0) q burst)) q (4316 . 2)) ((c form c (c (? . 0) q skill)) q (4295 . 2)) ((c form c (c (? . 0) q physical)) q (4212 . 2)) ((c form c (c (? . 0) q define-attack-sequence)) q (455 . 16)) ((c form c (c (? . 0) q unconditional-buff)) q (2523 . 6)) ((c form c (c (? . 0) q em)) q (3585 . 2)) ((c form c (c (? . 0) q hp%)) q (3605 . 2)) ((c form c (c (? . 0) q critd)) q (3726 . 2)) ((c form c (c (? . 0) q define-team-lineup)) q (2129 . 5)) ((c form c (c (? . 0) q Q)) q (3999 . 2)) ((c form c (c (? . 0) q calculate-raw-rotation-damage)) q (2375 . 6)) ((c form c (c (? . 0) q Swap)) q (4040 . 2)) ((c form c (c (? . 0) q dmg)) q (3894 . 2)) ((c form c (c (? . 0) q atk%)) q (3629 . 2)) ((c form c (c (? . 0) q cryo)) q (4107 . 2)) ((c form c (c (? . 0) q mod)) q (3849 . 2)) ((c form c (c (? . 0) q define-character)) q (1079 . 19)) ((c form c (c (? . 0) q ND)) q (4019 . 2)) ((c form c (c (? . 0) q calculate-rotation-damage)) q (2231 . 6)) ((c form c (c (? . 0) q define-weapon)) q (33 . 7)) ((c form c (c (? . 0) q def%)) q (3654 . 2)) ((c form c (c (? . 0) q critr)) q (3703 . 2)) ((c form c (c (? . 0) q genshin-calc)) q (0 . 2)) ((c form c (c (? . 0) q define-artifact)) q (875 . 10)) ((c form c (c (? . 0) q hp)) q (3523 . 2))))
+2308
+((3) 0 () 1 ((q lib "elements/main.rkt")) () (h ! (equal) ((c form c (c (? . 0) q geo)) q (4371 . 2)) ((c form c (c (? . 0) q C)) q (4180 . 2)) ((c form c (c (? . 0) q charged-attack)) q (4486 . 2)) ((c form c (c (? . 0) q pyro)) q (4287 . 2)) ((c form c (c (? . 0) q anemo)) q (4390 . 2)) ((c form c (c (? . 0) q applied-buff)) q (3099 . 10)) ((c form c (c (? . 0) q define-skill)) q (186 . 14)) ((c form c (c (? . 0) q electro)) q (4348 . 2)) ((c form c (c (? . 0) q normal-attack)) q (4457 . 2)) ((c form c (c (? . 0) q dendro)) q (4411 . 2)) ((c form c (c (? . 0) q triggered-buff)) q (2701 . 12)) ((c form c (c (? . 0) q E)) q (4200 . 2)) ((c form c (c (? . 0) q atk)) q (3437 . 2)) ((c def c (c (? . 0) q crit-stat)) q (3499 . 2)) ((c form c (c (? . 0) q N)) q (4160 . 2)) ((c form c (c (? . 0) q dmg%)) q (3530 . 2)) ((c form c (c (? . 0) q define-enemy)) q (1579 . 22)) ((c form c (c (? . 0) q em%)) q (3672 . 2)) ((c form c (c (? . 0) q hydro)) q (4307 . 2)) ((c form c (c (? . 0) q buff)) q (3696 . 8)) ((c form c (c (? . 0) q def)) q (3458 . 2)) ((c form c (c (? . 0) q burst)) q (4537 . 2)) ((c form c (c (? . 0) q skill)) q (4516 . 2)) ((c form c (c (? . 0) q physical)) q (4433 . 2)) ((c form c (c (? . 0) q define-attack-sequence)) q (449 . 16)) ((c form c (c (? . 0) q unconditional-buff)) q (2517 . 6)) ((c form c (c (? . 0) q em)) q (3479 . 2)) ((c form c (c (? . 0) q critd)) q (3575 . 2)) ((c form c (c (? . 0) q hp%)) q (3598 . 2)) ((c form c (c (? . 0) q define-team-lineup)) q (2123 . 5)) ((c form c (c (? . 0) q Q)) q (4220 . 2)) ((c form c (c (? . 0) q Swap)) q (4261 . 2)) ((c form c (c (? . 0) q calculate-raw-rotation-damage)) q (2369 . 6)) ((c form c (c (? . 0) q dmg)) q (4049 . 5)) ((c form c (c (? . 0) q atk%)) q (3622 . 2)) ((c form c (c (? . 0) q cryo)) q (4328 . 2)) ((c form c (c (? . 0) q mod)) q (3883 . 7)) ((c form c (c (? . 0) q define-character)) q (1073 . 19)) ((c form c (c (? . 0) q ND)) q (4240 . 2)) ((c form c (c (? . 0) q calculate-rotation-damage)) q (2225 . 6)) ((c form c (c (? . 0) q define-weapon)) q (33 . 7)) ((c form c (c (? . 0) q def%)) q (3647 . 2)) ((c form c (c (? . 0) q critr)) q (3552 . 2)) ((c form c (c (? . 0) q genshin-calc)) q (0 . 2)) ((c form c (c (? . 0) q define-artifact)) q (869 . 10)) ((c form c (c (? . 0) q hp)) q (3417 . 2))))
 syntax
 (genshin-calc expr ...)
 syntax
-(define-weapon name damage attr buffs ...)
+(define-weapon name atk attr buffs ...)
  
   name : identifier?
-  damage : number?
+  atk : number?
   attr : modifier-attribute?
   buffs : buff?
 syntax
@@ -109,32 +109,32 @@ syntax
   attk : attack-key?
 buff syntax
 (unconditional-buff [name #:effect attr
-                           #:party-wide party-wide])
+                     #:party-wide party-wide])
  
   attr : buff-attribute?
   party-wide : boolean?
 trigger buff syntax
 (triggered-buff [name #:effect attr
-                       #:trigger t
-                       #:limit limit
-                       #:party-wide party-wide
-                       #:duration duration])
+                 #:trigger t
+                 #:limit limit
+                 #:party-wide party-wide
+                 #:duration duration])
  
   attr : buff-attribute?
   t : trigger?
   limit : integer?
   party-wide : boolean?
-  duration : positive?
+  duration : number?
 trigger buff syntax
 (applied-buff [name #:effect attr
-                     #:limit limit
-                     #:party-wide party-wide
-                     #:duration duration])
+               #:limit limit
+               #:party-wide party-wide
+               #:duration duration])
  
   attr : buff-attribute?
   limit : integer?
   party-wide : boolean?
-  duration : positive?
+  duration : number?
 base stat syntax
 hp
 base stat syntax
@@ -143,6 +143,14 @@ base stat syntax
 def
 base stat syntax
 em
+value
+crit-stat : crit-stat?
+flat stat syntax
+dmg%
+flat stat syntax
+critr
+flat stat syntax
+critd
 percent stat syntax
 hp%
 percent stat syntax
@@ -151,19 +159,26 @@ percent stat syntax
 def%
 percent stat syntax
 em%
-flat stat syntax
-critr
-flat stat syntax
-critd
-flat stat syntax
-dmg%
 buff attribute syntax
 (buff attr value)
-(buff base-attr (sattr percent))
+(buff base-attr (scale-attr value))
+ 
+  attr : stat?
+  base-attr : base-stat?
+  scale-attr : percent-stat?
+  value : number?
 modifier attribute syntax
-(mod attr value)
+(mod char-attr value)
+(mod percent-attr value)
+ 
+  char-attr : char-stat?
+  percent-attr : percent-stat?
+  value : number?
 damage attribute syntax
-(dmg attr percent)
+(dmg percent-attr value)
+ 
+  percent-attr : percent-stat?
+  value : number?
 attack key syntax
 N
 attack key syntax

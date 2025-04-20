@@ -4,6 +4,24 @@
 
 (provide display-data)
 
+#|
+  Deals with how data is displayed to the user when the user wants more than raw data.
+  Formats the results properly, and compares it to previous attempts.
+|#
+
+;; checks for a more optimal damage rotation based on saved results
+(define (determine-current-optimal data-list curr-max team enemy)
+  (cond [(empty? data-list) curr-max]
+        [else (define entry (first data-list))
+              (define dps (/ (second entry)
+                             (third entry)))
+              (if (and (or (empty? curr-max) (> dps (/ (second curr-max)
+                                                       (third curr-max))))
+                       (equal? (fourth entry) team)
+                       (equal? (fifth entry) enemy))
+                  (determine-current-optimal (rest data-list) entry team enemy)
+                  (determine-current-optimal (rest data-list) curr-max team enemy))]))
+
 ;; simple rounding function for displaying data
 (define (decimal-round num)
   (/ (round (* 100 num)) 100))

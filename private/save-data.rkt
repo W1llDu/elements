@@ -2,6 +2,10 @@
 
 (provide (all-defined-out))
 
+#|
+  Handles saving and loading to the save data file.
+|#
+
 ; saves an entry to the save data file
 (define (save-entry entry)
   (call-with-output-file "data.txt"
@@ -28,17 +32,4 @@
 (define (clear-file)
   (call-with-output-file "data.txt"
     (lambda (out) (void))
-    #:exists 'truncate))
-
-;; checks for a more optimal damage rotation based on saved results
-(define (determine-current-optimal data-list curr-max team enemy)
-  (cond [(empty? data-list) curr-max]
-        [else (define entry (first data-list))
-              (define dps (/ (second entry)
-                             (third entry)))
-              (if (and (or (empty? curr-max) (> dps (/ (second curr-max)
-                                                       (third curr-max))))
-                       (equal? (fourth entry) team)
-                       (equal? (fifth entry) enemy))
-                  (determine-current-optimal (rest data-list) entry team enemy)
-                  (determine-current-optimal (rest data-list) curr-max team enemy))]))  
+    #:exists 'truncate))  

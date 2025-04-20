@@ -35,13 +35,17 @@
 (begin-for-syntax
 
   (define-syntax-class stat
-    (pattern base:base-stat)
+    (pattern scaling:scaling-stat)
     (pattern flat:flat-stat)
     (pattern percent:percent-stat))
 
   (define-syntax-class char-stat
     (pattern base:base-stat)
     (pattern crit:crit-stat))
+
+  (define-syntax-class scaling-stat
+    (pattern base:base-stat)
+    (pattern (~datum dmg)))
 
   (define-syntax-class base-stat
     (pattern (~datum hp))
@@ -51,7 +55,7 @@
   
   (define-syntax-class flat-stat
     (pattern crit:crit-stat)
-    (pattern (~datum dmg%)))
+    (pattern (~datum dmg%))) ; only flat increase
 
   (define-syntax-class crit-stat
     (pattern (~datum critr))
@@ -193,9 +197,8 @@
 
  (nonterminal buff-attribute
               #:description "buff attribute"
-              (buff attr:stat value:number)
-              (buff attr:base-stat (sattr:percent-stat percent:number))
-              #;(buff attr:flat-stat (sattr:percent-stat percent:number)))
+              (buff attr:stat value:number) ; flat dmg increase doesnt technically exist but we allow it
+              (buff attr:scaling-stat (sattr:percent-stat percent:number)))
 
  (nonterminal modifier-attribute
               #:description "modifier attribute"
@@ -204,7 +207,7 @@
 
  (nonterminal damage-attribute
               #:description "damage attribute"
-              (dmg attr:percent-stat percent:number))
+              (base-dmg attr:percent-stat percent:number))
 
  (nonterminal trigger
               normal-attack
@@ -303,7 +306,7 @@
     (syntax-parse stx
       [(_ name:id
           #:cooldown cd:number
-          #:attr ((~datum dmg) attr modifier)
+          #:attr ((~datum base-dmg) attr modifier)
           #:duration duration:number
           #:type type buffs ...)
        #'(define name (make-skill cd
@@ -342,11 +345,11 @@
 (define-syntax compile-define-attack-sequence
   (lambda (stx)
     (syntax-parse stx
-      [(_ name:id ([((~datum dmg) attr percent:number) duration:number type] ...
-                   #:charged  [((~datum dmg) attr2 percent2:number)
+      [(_ name:id ([((~datum base-dmg) attr percent:number) duration:number type] ...
+                   #:charged  [((~datum base-dmg) attr2 percent2:number)
                                duration2:number
                                type2]
-                   #:plunging [((~datum dmg) attr3 percent3:number)
+                   #:plunging [((~datum base-dmg) attr3 percent3:number)
                                duration3:number
                                type3]))
        #'(define name (make-attack-sequence

@@ -9,12 +9,12 @@
                     (genshin-calc
 
                      (define-attack-sequence attack-chain
-                       ([(dmg atk% 10) 0.5 physical]
-                        [(dmg atk% 25) 0.2 physical]
-                        [(dmg atk% 125) 0.8 physical]
-                        [(dmg atk% 250) 1.5 physical]
-                        #:charged [(dmg hp% 5) 3.5 pyro]
-                        #:plunging [(dmg hp% 10) 3.5 physical]))
+                       ([(base-dmg atk% 10) 0.5 physical]
+                        [(base-dmg atk% 25) 0.2 physical]
+                        [(base-dmg atk% 125) 0.8 physical]
+                        [(base-dmg atk% 250) 1.5 physical]
+                        #:charged [(base-dmg hp% 5) 3.5 pyro]
+                        #:plunging [(base-dmg hp% 10) 3.5 physical]))
 
 
                      (define-weapon test-weapon
@@ -37,7 +37,7 @@
                      ;; note : duration is optional
                      (define-skill all-attack-up
                        #:cooldown 25.0
-                       #:attr (dmg atk% 125)
+                       #:attr (base-dmg atk% 125)
                        #:duration 0.1
                        #:type pyro
                        (applied-buff
@@ -50,7 +50,7 @@
 
                      (define-skill basic-slash
                        #:cooldown 5.0 ;; cooldown
-                       #:attr (dmg atk% 25)
+                       #:attr (base-dmg atk% 25)
                        #:duration 1.0 ;; duration (where character cannot do anything else)
                        #:type pyro
                        (applied-buff
@@ -109,7 +109,7 @@
                        450 ;; base attack stat
                        (mod critr 24.1) ;; substat (crit rate)
                        (triggered-buff
-                        [dmgup
+                        [base-dmgup
                          #:effect (buff atk% 20.0) ;; increase atk by 20%
                          #:trigger 'normal-attack
                          #:limit 1
@@ -120,12 +120,12 @@
   (check-equal? (genshin-calc
 
                  (define-attack-sequence attack-chain
-                   ([(dmg atk% 10) 0.5 physical]
-                    [(dmg atk% 25) 0.2 physical]
-                    [(dmg atk% 125) 0.8 physical]
-                    [(dmg atk% 250) 1.5 physical]
-                    #:charged [(dmg hp% 5) 3.5 pyro]
-                    #:plunging [(dmg hp% 10) 3.5 physical]))
+                   ([(base-dmg atk% 10) 0.5 physical]
+                    [(base-dmg atk% 25) 0.2 physical]
+                    [(base-dmg atk% 125) 0.8 physical]
+                    [(base-dmg atk% 250) 1.5 physical]
+                    #:charged [(base-dmg hp% 5) 3.5 pyro]
+                    #:plunging [(base-dmg hp% 10) 3.5 physical]))
 
 
                  (define-weapon test-weapon
@@ -148,7 +148,7 @@
                  ;; note : duration is optional
                  (define-skill all-attack-up
                    #:cooldown 25.0
-                   #:attr (dmg atk% 125)
+                   #:attr (base-dmg atk% 125)
                    #:duration 0.1
                    #:type pyro
                    (applied-buff
@@ -161,7 +161,7 @@
 
                  (define-skill basic-slash
                    #:cooldown 5.0 ;; cooldown
-                   #:attr (dmg atk% 25)
+                   #:attr (base-dmg atk% 25)
                    #:duration 1.0 ;; duration (where character cannot do anything else)
                    #:type pyro
                    (applied-buff
@@ -244,12 +244,12 @@
                     (genshin-calc
 
                      (define-attack-sequence attack-chain
-                       ([(dmg atk% 10) 0.5 physical]
-                        [(dmg atk% 25) 0.2 physical]
-                        [(dmg atk% 125) 0.8 physical]
-                        [(dmg atk% 250) 1.5 physical]
-                        #:charged [(dmg hp% 5) 3.5 pyro]
-                        #:plunging [(dmg hp% 10) 3.5 physical]))
+                       ([(base-dmg atk% 10) 0.5 physical]
+                        [(base-dmg atk% 25) 0.2 physical]
+                        [(base-dmg atk% 125) 0.8 physical]
+                        [(base-dmg atk% 250) 1.5 physical]
+                        #:charged [(base-dmg hp% 5) 3.5 pyro]
+                        #:plunging [(base-dmg hp% 10) 3.5 physical]))
 
 
                      (define-weapon test-weapon 
@@ -272,7 +272,7 @@
                      ;; note : duration is optional
                      (define-skill all-attack-up
                        #:cooldown 25.0
-                       #:attr (dmg atk% 125)
+                       #:attr (base-dmg atk% 125)
                        #:duration 0.1
                        #:type pyro
                        (applied-buff
@@ -285,7 +285,7 @@
 
                      (define-skill basic-slash
                        #:cooldown 5.0 ;; cooldown
-                       #:attr (dmg atk% 25)
+                       #:attr (base-dmg atk% 25)
                        #:duration 1.0 ;; duration (where character cannot do anything else)
                        #:type pyro
                        (applied-buff
@@ -355,12 +355,12 @@
   (check-equal? (begin ((λ () (genshin-calc
 
                                (define-attack-sequence attack-chain
-                                 ([(dmg atk% 10) 0.5 physical]
-                                  [(dmg atk% 25) 0.2 physical]
-                                  [(dmg atk% 125) 0.8 physical]
-                                  [(dmg atk% 250) 1.5 physical]
-                                  #:charged [(dmg hp% 5) 3.5 pyro]
-                                  #:plunging [(dmg hp% 10) 3.5 physical]))
+                                 ([(base-dmg atk% 10) 0.5 physical]
+                                  [(base-dmg atk% 25) 0.2 physical]
+                                  [(base-dmg atk% 125) 0.8 physical]
+                                  [(base-dmg atk% 250) 1.5 physical]
+                                  #:charged [(base-dmg hp% 5) 3.5 pyro]
+                                  #:plunging [(base-dmg hp% 10) 3.5 physical]))
 
 
                                (define-weapon test-weapon
@@ -383,7 +383,7 @@
                                ;; note : duration is optional
                                (define-skill all-attack-up
                                  #:cooldown 25.0
-                                 #:attr (dmg atk% 125)
+                                 #:attr (base-dmg atk% 125)
                                  #:duration 0.1
                                  #:type pyro
                                  (applied-buff
@@ -396,7 +396,7 @@
 
                                (define-skill basic-slash
                                  #:cooldown 5.0 ;; cooldown
-                                 #:attr (dmg atk% 25)
+                                 #:attr (base-dmg atk% 25)
                                  #:duration 1.0 ;; duration (where character cannot do anything else)
                                  #:type pyro
                                  (applied-buff

@@ -239,7 +239,7 @@
                (acc-data-active-buffs acc-values)))
 
 ; turn attack-key into a trigger
-; TODO
+; attack->trigger : Attack-Key -> Attack-Trigger
 (define (attack->trigger attack)
   (match attack
     ['N 'normal-attack]
@@ -249,13 +249,13 @@
     [_ 'none]))
 
 ; merge new buffs into existing buffs
-; TODO
+; merge-buffs : (List Buff) (List Buff) -> (List Buff)
 (define (merge-buffs new old)
   (cond [(empty? new) old]
         [(cons? new) (merge-buffs (rest new) (merge-buff* (first new) old))]))
 
 ; helper for merge-buffs
-; TODO
+; merge-buff* : Buff (List Buff) -> (List Buff)
 (define (merge-buff* new old)
   (cond [(empty? old) (list (make-triggered-buff (triggered-buff-effect new)
                                                  (triggered-buff-trigger new)
@@ -267,7 +267,7 @@
                          (cons (first old) (merge-buff* new (rest old))))]))
 
 ; performs the merge for a single buff
-; TODO
+; merge-buff : Buff Buff -> Buff
 (define (merge-buff new old)
   (let ([limit* (min (triggered-buff-limit new)
                      (+ 1 (triggered-buff-limit old)))]
@@ -281,7 +281,7 @@
                          duration*)))
 
 ; checks if 2 triggered buffs are the same
-; TODO
+; triggered-buff=?* : Buff Buff -> Boolean
 (define (triggered-buff=?* b1 b2)
   (and (equal? (triggered-buff-effect b1)
                (triggered-buff-effect b2))
@@ -291,7 +291,7 @@
                (triggered-buff-party-wide b2))))
 
 ; remove buffs that, after duration passes, will expire
-; TODO
+; remove-expiring-buffs : (List Buff) Number -> (List Buff)
 (define (remove-expiring-buffs active-buffs* duration)
   (filter (λ (buff) (< 0 (triggered-buff-duration buff)))
           (map (λ (buff) (make-triggered-buff (triggered-buff-effect buff)
@@ -303,7 +303,7 @@
                active-buffs*)))
 
 ; determine the action the character is taking
-; TODO
+; determine-action : Acc-Data Character Attack-Key -> (Or Empty Attack Flat-Skill)
 (define (determine-action acc-values char attack)
   (cond [(list? attack) '()]
         [(or (symbol=? 'N attack) (symbol=? 'ND attack))
@@ -314,7 +314,7 @@
         [(symbol=? 'Q attack) (flat-char-burst char)]))
 
 ; determine the type of the characters action
-; TODO
+; deterimne-type : Attack-Key (Or Empty Attack Flat-Skill) -> Element
 (define (determine-type attack action)
   (cond [(list? attack) '()]
         [(or (symbol=? 'N attack) (symbol=? 'ND attack) (symbol=? 'C attack))
@@ -322,18 +322,19 @@
         [(or (symbol=? 'E attack) (symbol=? 'Q attack))
          (flat-skill-type action)]))
 
-; TODO
-; TODO
+; determine the next element of the enemy
+; determine-enemy-element : Acc-Data Element Element (Or Empty Attack Flat-Skill) -> Element
 (define (determine-enemy-element acc-values type attack)
   (define enemy-element (acc-data-enemy-element acc-values))
-  (cond [(list? attack) '()]
+  (cond [(list? attack) enemy-element]
         [(symbol=? type 'physical) enemy-element]
+        ; type is not 'physical anymore
         [(symbol=? enemy-element 'none) type]
         [(symbol=? type enemy-element) enemy-element]
         [else 'none]))
 
 ; determine the attribute of the character's action
-; TODO
+; determine-action-attribute : (Or Empty Attack Flat-Skill) Attack-Key -> Attribute
 (define (determine-action-attribute action attack)
   (cond [(list? attack) '()]
         [(or (symbol=? 'N attack) (symbol=? 'ND attack) (symbol=? 'C attack))
@@ -341,8 +342,9 @@
         [(or (symbol=? 'E attack) (symbol=? 'Q attack))
          (flat-skill-attr action)]))
 
-; determine the damage of the action
-; TODO
+; stage 2
+; determine the total damage following the action
+; determine-damage : Acc-Data Character Attack-Key (List Buff) Element Attribute -> Number
 (define (determine-damage acc-values char attack active-buffs* type attr)
   (define dmg (acc-data-dmg acc-values))
   (define enemy (acc-data-enemy acc-values))
@@ -350,39 +352,23 @@
   (define enemy-element (acc-data-enemy-element acc-values))
   (if (list? attack)
       dmg
-      (+ dmg
-         ; stage 2, stage 3
-         ; generate-dmg-info is a complex way
-         ; to get all the modified stats + values needed to
-         ; calculate damage
-         (calc-single-dmg (generate-dmg-info char
-                                             enemy
-                                             attack
-                                             nc
-                                             enemy-element
-                                             active-buffs*
-                                             type
-                                             attr)))))
-
-; stage 2
-; TODO
-; TODO
-(define (generate-dmg-info char enemy attack nc enemy-element active-buffs type attr)
-  (let ([stats (calc-total-stats char active-buffs)])
-    ; c/e/q/nd
-    ; calculate base dmg here + extra stats
-    (make-damage-info (calc-base-attr attr stats)
-                      1 ; base-dmg-mult ; look for dmg dmg% in buffs, which we dont have syntax for
-                      0 ; base-add ; look for rest of dmg, which we dont have syntax for
-                      1 ; dmg-mult ; elemental dmg bonus, which we dont have syntax for
-                      1 ; def-mult ; relies on levels, which we dont have syntax for
-                      (calc-res (enemy-res enemy) type) ; actual enemy res, figure out attack attr
-                      (calc-amp-mult type enemy-element) ; amp-mult (reactions) (optional?)
-                      (stat-info-critr stats)
-                      (stat-info-critd stats))))
+      (let ([stats (calc-total-stats char active-buffs*)])
+        (+ dmg
+           ; stage 2, stage 3
+           ; generate-dmg-info is a complex way
+           ; to get all the modified stats + values needed to
+           ; calculate damage
+           (* (+ (* (calc-base-dmg attr stats)
+                    (+ 1 0))  ; base-dmg-mult ; look for dmg% in buffs
+                 0) ; base-add ; look for dmg in buffs
+              1 ; dmg-mult ; elemental dmg bonus, which we dont have syntax for
+              1 ; def-mult ; relies on levels, which we dont have syntax for
+              (calc-res (enemy-res enemy) type) ; actual enemy res
+              (calc-amp-mult type enemy-element) ; amp-mult (reactions)
+              (calc-crit (min (stat-info-critr stats) 100) (stat-info-critd stats)))))))
 
 ; do a tree traversal (abstract out, use symbols?) flat incr vs incr by other amt (atk (def% 50)) increases atk by 50% of base def
-; TODO
+; calc-total-stats : Character (List Buff) -> Stat-Info
 (define (calc-total-stats char active-buffs)
   ; remember to scale % to decimal
   ; % is already desugared
@@ -404,23 +390,14 @@
                     (apply-all-modifiers buffs base-stat-info (flat-char-em char) 'em))))
 
 ; applies all buffs of a specified category
-; TODO
-(define (apply-all-modifiers buffs base-stat-info attr-char symbol)
-  (+ attr-char
+; apply-all-modifiers : (List Buff) Stat-Info Number Base-Stat -> Number
+(define (apply-all-modifiers buffs base-stat-info base-attr symbol)
+  (+ base-attr
      (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info))
                    (get-mods-with-attr buffs symbol)))))
 
-; calculate how much a modifer augments the given base stats
-; TODO
-(define (calc-modifier modifier base-stats)
-  (if (number? modifier)
-      modifier
-      (* (percent-p modifier)
-         0.01
-         (lookup-stat base-stats (percent-attr modifier)))))
-
-; TODO
-; TODO
+; gets modifiers of buffs that increase the given scaling-stat
+; get-mods-with-attr : (List Buff) Scaling-Stat -> (List Modifier)
 (define (get-mods-with-attr buffs attr)
   ; convert to modifier
   (map (λ (buff) (cond [(unconditional-buff? buff)
@@ -437,25 +414,32 @@
                                           attr)]))
                buffs)))
 
-; calculate the stat change
-; TODO
-(define (calc-base-attr attr stats)
+; calculate how much a modifer augments the given base stats
+; calc-modifer : (Or Number Percent) Stat-Info -> Number
+(define (calc-modifier modifier base-stats)
+  (if (number? modifier)
+      modifier
+      (* (percent-p modifier)
+         0.01
+         (lookup-stat base-stats (percent-attr modifier)))))
+
+; calculate base damage
+; calc-base-attr : Attribute Stat-Info -> Number
+(define (calc-base-dmg attr stats)
   ; ignore attribute-attr
-  ; must be %?
+  ; must be percent
   (* (percent-p (attribute-modifier attr))
      0.01
      (lookup-stat stats (percent-attr (attribute-modifier attr)))))
 
 ; match a stat symbol to its proper stat info
-; TODO
+; lookup-stat : Stat-Info Percent-Stat -> Number
 (define (lookup-stat stats attr)
   (case attr
     ['atk% (stat-info-atk stats)]
     ['def% (stat-info-def stats)]
     ['hp% (stat-info-hp stats)]
-    ['critr% (stat-info-critr stats)]
-    ['critd% (stat-info-critd stats)]
-    ['em (stat-info-em stats)]
+    ['em% (stat-info-em stats)]
     ))
 
 ; calculate the resistance to a given element
@@ -489,18 +473,6 @@
     ['(hydro pyro) 2]
     ['(pyro hydro) 1.5]
     [_ 1]))
-
-; final calculation for a single attack
-; calc-single-dmg : Damage-Info -> Number
-(define (calc-single-dmg dmg)
-  (* (+ (* (damage-info-base-dmg dmg)
-           (damage-info-base-dmg-mult dmg))
-        (damage-info-base-add dmg))
-     (damage-info-dmg-mult dmg)
-     (damage-info-def-mult dmg)
-     (damage-info-res dmg)
-     (damage-info-amp-mult dmg)
-     (calc-crit (min (damage-info-critr dmg) 100) (damage-info-critd dmg))))
 
 ; determine the average bonus crit damage
 ; calc-crit : Number Number -> Number

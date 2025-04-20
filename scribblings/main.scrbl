@@ -34,7 +34,7 @@ allowing you to easily keep track of what combination has provided the highest s
                       [attr modifier-attribute?]
                       [buffs buff?])]{
 
- Defines a weapon with a base attack number that buffs a characters stats based on the given @tech{modifier attribute} @racket[attr]. The weapon also has a list of @tech{buffs}.
+ Defines a @deftech{weapon} with a base attack number that buffs a characters stats based on the given @tech{modifier attribute} @racket[attr]. The weapon also has a list of @tech{buffs}.
 
 }
 @examples[#:eval eval #:label #f
@@ -67,14 +67,14 @@ allowing you to easily keep track of what combination has provided the highest s
                       [type element?]
                       [buffs buff?])]{
 
- Defines a character skill/burst that has a cooldown, duration, and a list of @tech{buffs}. The skill also deals damage based on the given @tech{damage attribute} @racket[attr].
+ Defines a character @deftech{skill}/burst that has a cooldown, duration, and a list of @tech{buffs}. The skill also deals damage based on the given @tech{damage attribute} @racket[attr].
                                                                                                                    
 
 }
 @examples[#:eval eval #:label #f
           (define-skill all-attack-up
             #:cooldown 25.0
-            #:attr (dmg atk% 125)
+            #:attr (base-dmg atk% 125)
             #:duration 0.1
             #:type pyro
             (applied-buff
@@ -87,7 +87,7 @@ allowing you to easily keep track of what combination has provided the highest s
 
           (define-skill basic-slash
             #:cooldown 5.0
-            #:attr (dmg atk% 25)
+            #:attr (base-dmg atk% 25)
             #:duration 1.0
             #:type pyro
             (applied-buff
@@ -113,7 +113,7 @@ allowing you to easily keep track of what combination has provided the highest s
                       [duration3 number?]
                       [type3 element?])]{
 
- Defines a character's attack sequence. Each attack has its own unique duration and an @tech{element} @racket[type]. Attacks deal damage
+ Defines a character's @deftech{attack sequence}. Each attack has its own unique duration and an @tech{element} @racket[type]. Attacks deal damage
  based on the given @tech{damage attribute} @racket[attr].                                                                                     
  An attack sequence also includes a charged and plunging attack, with their own corresponding duration, damage, and element type.                                                                                                
 
@@ -121,12 +121,12 @@ allowing you to easily keep track of what combination has provided the highest s
 
 @examples[#:eval eval #:label #f
           (define-attack-sequence attack-chain
-            ([(dmg atk% 10) 0.5 physical]
-             [(dmg atk% 25) 0.2 physical]
-             [(dmg atk% 125) 0.8 physical]
-             [(dmg atk% 250) 1.5 physical]
-             #:charged [(dmg hp% 5) 3.5 pyro]
-             #:plunging [(dmg hp% 10) 3.5 physical]))]
+            ([(base-dmg atk% 10) 0.5 physical]
+             [(base-dmg atk% 25) 0.2 physical]
+             [(base-dmg atk% 125) 0.8 physical]
+             [(base-dmg atk% 250) 1.5 physical]
+             #:charged [(base-dmg hp% 5) 3.5 pyro]
+             #:plunging [(base-dmg hp% 10) 3.5 physical]))]
 
 @defform[(define-artifact name
            set-name
@@ -137,7 +137,7 @@ allowing you to easily keep track of what combination has provided the highest s
                       [main-attr modifier-attribute?]
                       [sub-attr modifier-attribute?])]{
 
- Defines an artifact piece. Artifacts belong to a set, specified by the string provided by @racket[set-name]. Each artifact also augments a character's @tech{stats} with a
+ Defines an @deftech{artifact} piece. Artifacts belong to a set, specified by the string provided by @racket[set-name]. Each artifact also augments a character's @tech{stats} with a
  @tech{modifier attribute} @racket[main-attr], as well as a list of more @tech{modifier attribute} sub attributes.                                                                                        
 
 }
@@ -177,7 +177,7 @@ allowing you to easily keep track of what combination has provided the highest s
                       [burst identifier?]
                       [artifacts identifier?])]{
 
- Defines a character that has a list of @tech{base stats} numbers, and the name of an attack string, weapon, skill, burst, and list of artifacts.
+ Defines a @deftech{character} that has a list of @tech{base stats} numbers, and the name of an attack string, weapon, skill, burst, and list of artifacts.
  Names must be defined with their respective "define-" type in order to be properly assigned to a character.
 
 }
@@ -233,7 +233,7 @@ allowing you to easily keep track of what combination has provided the highest s
                       [physical number?]
                       [reduction number?])]{
 
- Defines an enemy that has numbers representing their defense, resistances to @tech{elements}, and overall damage reduction.
+ Defines an @deftech{enemy} that has numbers representing their defense, resistances to @tech{elements}, and overall damage reduction.
 
 }
 
@@ -255,7 +255,7 @@ allowing you to easily keep track of what combination has provided the highest s
          #:contracts ([name identifier?]
                       [chars identifier?])]{
 
- Defines a team lineup that consists of a list of characters, which is used to calculate damage rotations.
+ Defines a @deftech{team lineup} that consists of a list of characters, which is used to calculate damage rotations.
 
 }
 
@@ -294,8 +294,9 @@ allowing you to easily keep track of what combination has provided the highest s
 @(define buff-syntax "buff syntax")
 
 A @deftech{buff} augments characters when active, changing the values of a character's @tech{stats} by a specified amount. A buff can either be a @racket[unconditional-buff], or a @tech{trigger-buff}.
-@defform[#:kind buff-syntax (unconditional-buff [name #:effect attr
-                                                 #:party-wide party-wide])
+@defform[#:kind buff-syntax
+         (unconditional-buff [name #:effect attr
+                              #:party-wide party-wide])
          #:contracts ([attr buff-attribute?]
                       [party-wide boolean?])]{
 
@@ -345,71 +346,69 @@ Every character has a set of stats, which can either be modified, or be used to 
 Additionally, characters can equip a weapon and multiple artifacts to further augment that stats they already have.
 
 
-@racketgrammar[
- stat
- base-stat
- flat-stat
- percent-stat
+@racketgrammar*[
+ #:literals (dmg hp atk def em dmg% critr critd hp% atk% def% em%)
+ [stat
+ 
+  scaling-stat
+  flat-stat
+  percent-stat]
+ [char-stat
+
+  base-stat
+  crit-stat]
+ [scaling-stat
+
+  base-stat
+  dmg]
+ [base-stat
+
+  hp
+  atk
+  def
+  em]
+ [flat-stat
+
+  crit-stat
+  dmg%]
+ [crit-stat
+
+  critr
+  critd]
+ [percent-stat
+
+  hp%
+  atk%
+  def%
+  em%]
  ]
-A @deftech{stat} is any attribute mentioned below.
 
+All @deftech{stat}s can be increased by a flat value.
 
-@racketgrammar[
- char-stat
- bast-stat
- crit-stat
- ]
-A @deftech{char stat} is one of the 6 stats a character can have.
+@subsection{Char stats}
+A @deftech{char stat} is one of the six stats a @tech{character} can have.
 
+@subsection{Scaling stats}
+A @deftech{scaling stat} is a stat that can scale off of a @tech{percent stat}.
 
 @subsection{Base stats}
-@(define base-stat-syntax "base stat syntax")
-@(define percent-stat-syntax "percent stat syntax")
-@(define flat-stat-syntax "flat stat syntax")
-@deftogether[(
-              @defidform[#:kind base-stat-syntax hp]
-               @defidform[#:kind base-stat-syntax atk]
-               @defidform[#:kind base-stat-syntax def]
-               @defidform[#:kind base-stat-syntax em]
-               )]{
- A @deftech{base stat} is one of a characters main stat attributes. They represent a characters hit points, attack, defense, and elemental mastery respectively.
-}
+A @deftech{base stat} is one of a character's main stat attributes.
+
+They have corresponding @deftech{percent stat}s that @tech{scaling stat}s scale off of.
 
 @subsection{Flat stats}
-@deftogether[(
-              @defthing[crit-stat crit-stat?]
-               @defidform[#:kind flat-stat-syntax dmg%]
-               )]{
- A @deftech{flat stat} is similar to a @tech{base stat}, but does not have a @tech{percent stat} counterpart.
- They represent a characters critical rate, critical damage, and percent damage bonus respectively.
-}
-
-@deftogether[(
-              @defidform[#:kind flat-stat-syntax critr]
-               @defidform[#:kind flat-stat-syntax critd]
-               )]{
- A @deftech{crit stat} represents crit rate or crit percentage. They can only be increased by a flat value.
-}
-
-@subsection{Percent stats}
-@deftogether[(
-              @defidform[#:kind percent-stat-syntax hp%]
-               @defidform[#:kind percent-stat-syntax atk%]
-               @defidform[#:kind percent-stat-syntax def%]
-               @defidform[#:kind percent-stat-syntax em%]
-               )]{
- A @deftech{percent stat} is a percent scaling of a @tech{base stat}, rather than the base stat itself.
-}
+A @deftech{flat stat} is a stat that can only increase by a flat value. They are either a @deftech{crit stat} or @racket{dmg%}
 
 @section{Attributes}
 An @deftech{attribute} is a calculation that depends on one or more @tech{stats}. There are multiple variations depending on the action that attribute is being used to perform.
+
 @subsection{Buff attributes}
 @(define buff-attr-syntax "buff attribute syntax")
 @defform*[#:kind buff-attr-syntax
           ((buff attr value)
-           (buff base-attr (scale-attr value)))
+           (buff scaling-attr (scale-attr value)))
           #:contracts ([attr stat?]
-                       [base-attr base-stat?]
+                       [scaling-attr scaling-stat?]
                        [scale-attr percent-stat?]
                        [value number?])]{
  A @deftech{buff attribute} indicates how a buff augments the stats of a character, and can be written in multiple ways.
@@ -436,7 +435,7 @@ An @deftech{attribute} is a calculation that depends on one or more @tech{stats}
 @subsection{Damage attributes}
 @(define dmg-attr-syntax "damage attribute syntax")
 @defform[#:kind dmg-attr-syntax
-         (dmg percent-attr value)
+         (base-dmg percent-attr value)
          #:contracts ([percent-attr percent-stat?]
                       [value number?])]{
  A @deftech{damage attribute} indicates what @tech{percent-stat} to scale an instance of damage off of by a percentage equal to (@racket[value]/100).

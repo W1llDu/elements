@@ -23,36 +23,43 @@
   duplicate definitions from showing up at compile time.
 |#
 
-(require (for-syntax syntax/parse))
-(require syntax-spec-v3 (for-syntax syntax/parse syntax/to-string))
+(require syntax-spec-v3 (for-syntax syntax/parse #;syntax/to-string))
 (require "private/runtime.rkt")
-(require racket/hash)
+#;(require racket/hash)
 
 (provide (all-defined-out))
 
 (begin-for-syntax
 
   (define-syntax-class stat
-    (pattern flat:flat-stat)
     (pattern base:base-stat)
+    (pattern flat:flat-stat)
     (pattern percent:percent-stat))
-  
-  (define-syntax-class flat-stat
-    (pattern (~datum critr))
-    (pattern (~datum critd))
-    (pattern (~datum dmg%)))
+
+  (define-syntax-class char-stat
+    (pattern base:base-stat)
+    (pattern crit:crit-stat))
 
   (define-syntax-class base-stat
     (pattern (~datum hp))
     (pattern (~datum atk))
     (pattern (~datum def))
     (pattern (~datum em)))
+  
+  (define-syntax-class flat-stat
+    (pattern crit:crit-stat)
+    (pattern (~datum dmg%)))
+
+  (define-syntax-class crit-stat
+    (pattern (~datum critr))
+    (pattern (~datum critd)))
 
   (define-syntax-class percent-stat
     (pattern (~datum hp%))
     (pattern (~datum atk%))
     (pattern (~datum def%))
-    (pattern (~datum em%))))
+    (pattern (~datum em%)))
+  )
 
 (syntax-spec
 
@@ -67,13 +74,13 @@
 
  (host-interface/definitions
   (define-weapon name:weapon-bind
-    damage:number
+    atk:number
     attr:modifier-attribute
     buffs:buff ...)
   #:binding (export name)
   #'(compile-define-weapon
      name
-     damage
+     atk
      attr
      buffs ...))
 
@@ -182,18 +189,19 @@
               physical)
 
  (nonterminal buff-attribute
-    #:description "buff attribute"
-    (buff attr:stat value:number)
-    (buff attr:base-stat (sattr:percent-stat percent:number))
-    (buff attr:flat-stat (sattr:percent-stat percent:number)))
+              #:description "buff attribute"
+              (buff attr:stat value:number)
+              (buff attr:base-stat (sattr:percent-stat percent:number))
+              #;(buff attr:flat-stat (sattr:percent-stat percent:number)))
 
  (nonterminal modifier-attribute
-   #:description "modifier attribute"
-   (mod attr:stat value:number))
+              #:description "modifier attribute"
+              (mod attr:char-stat value:number)
+              (mod attr:percent-stat value:number))
 
  (nonterminal damage-attribute
-   #:description "damage attribute"
-   (dmg attr:percent-stat percent:number))
+              #:description "damage attribute"
+              (dmg attr:percent-stat percent:number))
 
  (nonterminal trigger
               normal-attack

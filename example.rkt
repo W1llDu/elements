@@ -128,55 +128,75 @@
 
 ;; Example Expansion of code
 
-#;(begin
+#;(let ()
     
     ;; define runtime versions of macros
-  (define attack-chain (make-attack-sequence (list (make-attack (make-attribute 'atk (make-percent 'atk% 10)) 0.5 'physical)
-                                                   (make-attack (make-attribute 'atk (make-percent 'atk% 25)) 0.2 'physical)
-                                                   (make-attack (make-attribute 'atk (make-percent 'atk% 125)) 0.8 'physical)
-                                                   (make-attack (make-attribute 'atk (make-percent 'atk% 250)) 1.5 'physical))
-                                             (make-attack (make-attribute 'hp (make-percent 'hp% 5)) 3.5 'pyro)
-                                             (make-attack (make-attribute 'hp (make-percent 'hp% 10)) 3.5 'physical)))
+    (define attack-chain (make-attack-sequence
+                          (list (make-attack (make-attribute 'atk (make-percent 'atk% 10)) 0.5 'physical)
+                                (make-attack (make-attribute 'atk (make-percent 'atk% 25)) 0.2 'physical)
+                                (make-attack (make-attribute 'atk (make-percent 'atk% 125)) 0.8 'physical)
+                                (make-attack (make-attribute 'atk (make-percent 'atk% 250)) 1.5 'physical))
+                          (make-attack (make-attribute 'hp (make-percent 'hp% 5)) 3.5 'pyro)
+                          (make-attack (make-attribute 'hp (make-percent 'hp% 10)) 3.5 'physical)))
     
-  (define test-weapon
-    (make-weapon 450 (make-attribute 'critr 24.1)
-                 (list (make-triggered-buff (make-attribute 'atk (make-percent 'atk% 20)) 'normal-attack 1 #f 10)
-                       (make-unconditional-buff (make-attribute 'critd 20) #f))))
+    (define test-weapon
+      (make-weapon 450 (make-attribute 'critr 24.1)
+                   (list (make-triggered-buff (make-attribute 'atk (make-percent 'atk% 20)) 'normal-attack 1 #f 10)
+                         (make-unconditional-buff (make-attribute 'critd 20) #f))))
 
-  (define all-attack-up
-    (make-skill 25 (make-attribute 'atk (make-percent 'atk% 125)) 0.1 'pyro
-                (list (make-applied-buff (make-attribute 'atk 125) 1 #t 10))))
+    (define all-attack-up
+      (make-skill 25 (make-attribute 'atk (make-percent 'atk% 125)) 0.1 'pyro
+                  (list (make-applied-buff (make-attribute 'atk 125) 1 #t 10))))
 
-  (define basic-slash
-    (make-skill 5 (make-attribute 'atk (make-percent 'atk% 25)) 1.0 'pyro
-                (list (make-applied-buff (make-attribute 'hp 20) 1 #t 10))))
+    (define basic-slash
+      (make-skill 5 (make-attribute 'atk (make-percent 'atk% 25)) 1.0 'pyro
+                  (list (make-applied-buff (make-attribute 'hp 20) 1 #t 10))))
 
-  (define test-feather
-    (make-artifact "cool feather collection"
-                   (make-attribute 'atk 375) (list (make-attribute 'atk 27)
-                                                   (make-attribute 'em 42)))) 
+    (define test-feather
+      (make-artifact "cool feather collection"
+                     (make-attribute 'atk 375) (list (make-attribute 'atk 27)
+                                                     (make-attribute 'em 42)))) 
     
-  (define test-goblet
-    (make-artifact "cool goblet collection"
-                   (make-attribute 'critr 46.6) (list (make-attribute 'critd 16.2)
-                                                      (make-attribute 'critr 3.0)
-                                                      (make-attribute 'def 128))))
+    (define test-goblet
+      (make-artifact "cool goblet collection"
+                     (make-attribute 'critr 46.6) (list (make-attribute 'critd 16.2)
+                                                        (make-attribute 'critr 3.0)
+                                                        (make-attribute 'def 128))))
     
-  (define test-char
-    (make-character 12000
-                    500
-                    900
-                    20
-                    5
-                    50
-                    attack-chain
-                    test-weapon
-                    basic-slash
-                    all-attack-up
-                    (list test-feather test-goblet)))
+    (define test-char
+      (make-character 12000
+                      500
+                      900
+                      20
+                      5
+                      50
+                      attack-chain
+                      test-weapon
+                      basic-slash
+                      all-attack-up
+                      (list test-feather test-goblet)))
 
-  (define dummy
-    (make-enemy 1000 (make-resistances 50 10 10 10 10 10 10 -20) 5))
+    (define test-char2
+      (make-character 12000
+                      500
+                      900
+                      20
+                      25
+                      50
+                      attack-chain
+                      test-weapon
+                      basic-slash
+                      all-attack-up
+                      (list test-feather test-goblet)))
 
-  (define lone-member (list test-char))
-)
+    (define dummy
+      (make-enemy 1000 (make-resistances 50 10 10 10 10 10 10 -20) 5))
+
+    (define two-members (list test-char test-char2))
+    (define lone-member (list test-char))
+
+    (display-data (calc-damage two-members dummy '(E Q N N N N (Swap 1) N N N ND))
+                  '(E Q N N N N (Swap 1) N N N ND))  
+    (display-data (calc-damage lone-member dummy (N N N N N N N N N N N N))
+                  (N N N N N N N N N N N N))  
+    )

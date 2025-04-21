@@ -11,7 +11,7 @@
      [(_ id space)
       #'(racket #,((make-interned-syntax-introducer (syntax-e #'space)) #'id))]))
 
-@title{Elements: A DSL for optimizing and calculating Genshin Impact damage rotations}
+@title{elements: A DSL for optimizing and calculating Genshin Impact damage rotations}
 @author+email["Joshua Goldberg" "goldberg.josh@northeastern.edu"]@linebreak[]
 @author+email["Will Du" "du.wi@northeastern.edu"]
 

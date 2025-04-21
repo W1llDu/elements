@@ -23,9 +23,9 @@ Here is a simple example that defines two similar characters, two lineups, and r
     #:charged [(base-dmg hp% 5) 3.5 pyro]
     #:plunging [(base-dmg hp% 10) 3.5 physical]))
 
- (define-weapon test-weapon
-   450 ;; base attack stat
-   (mod critr 24.1) ;; substat (crit rate)
+ (define-weapon wolfs-gravestone
+   450 
+   (mod critr 24.1)
    (triggered-buff
     [dmgup
      #:effect (buff atk% 20.0) 
@@ -40,6 +40,21 @@ Here is a simple example that defines two similar characters, two lineups, and r
      #:party-wide #f])
    )
 
+ (define-weapon vitality-staff
+   674 
+   (mod em 1000)
+
+   (unconditional-buff
+    [crit-up
+     #:effect (buff critd 20) 
+     #:party-wide #f])
+
+   (unconditional-buff
+    [crit-up
+     #:effect (buff hp% 50) 
+     #:party-wide #f])
+   )
+
  (define-skill all-attack-up
    #:cooldown 25.0
    #:attr (base-dmg atk% 125)
@@ -50,13 +65,32 @@ Here is a simple example that defines two similar characters, two lineups, and r
      #:effect (buff atk 125)
      #:limit 1
      #:party-wide #t
-     #:duration 10]) ;; this time applies to all members of a lineup
+     #:duration 10]) 
+   )
+
+ (define-skill super-charge
+   #:cooldown 60.0
+   #:attr (base-dmg hp% 500)
+   #:duration 2.0
+   #:type hydro
+   (applied-buff
+    [skill-atkup
+     #:effect (buff atk% 200)
+     #:limit 1
+     #:party-wide #t
+     #:duration 20])
+   (applied-buff
+    [skill-atkup
+     #:effect (buff def% 300)
+     #:limit 3
+     #:party-wide #f
+     #:duration 30])
    )
 
  (define-skill basic-slash
-   #:cooldown 5.0 ;; cooldown
+   #:cooldown 5.0 
    #:attr (base-dmg atk% 25)
-   #:duration 1.0 ;; duration (where character cannot do anything else)
+   #:duration 1.0 
    #:type pyro
    (applied-buff
     [skill-hpup
@@ -66,22 +100,41 @@ Here is a simple example that defines two similar characters, two lineups, and r
      #:duration 10.0]) 
    )
 
- (define-artifact test-feather
-   "cool feather collection" 
+ (define-skill holy-blast
+   #:cooldown 90.0 
+   #:attr (base-dmg atk% 500)
+   #:duration 1.0 
+   #:type hydro 
+   )
+
+ (define-artifact flaming-feather
+   "fiery flames of a bygone era" 
    (mod atk 325) 
    (mod atk 27) 
    (mod em 42)
    )
 
- (define-artifact test-goblet
-   "cool goblet collection" 
+ (define-artifact cracked-goblet
+   "ruins of an the ancient city" 
    (mod critr 46.6) 
    (mod critd 16.2) 
    (mod critr 3.0)
    (mod def 128)
    )
 
- (define-character test-char
+ (define-artifact heros-cap
+   "heros attire" 
+   (mod atk% 20.5) 
+   (mod atk 200)
+   )
+
+ (define-artifact universal-timepiece
+   "relics from the edge of space" 
+   (mod critd 60) 
+   (mod em 300)
+   )
+
+ (define-character diluc
    #:hp 12000 
    #:def 500   
    #:atk 900   
@@ -89,26 +142,26 @@ Here is a simple example that defines two similar characters, two lineups, and r
    #:critr 5     
    #:critd 50    
    #:attacks attack-chain
-   #:weapon test-weapon 
+   #:weapon wolfs-gravestone 
    #:skill basic-slash 
    #:burst all-attack-up 
-   #:artifacts test-feather
-   test-goblet
+   #:artifacts flaming-feather
+   cracked-goblet
    )
 
- (define-character test-char2
-   #:hp 12000 
-   #:def 500   
-   #:atk 900   
-   #:em 20    
-   #:critr 25     
-   #:critd 50    
+ (define-character zhongli
+   #:hp 15000 
+   #:def 200  
+   #:atk 1200   
+   #:em 100    
+   #:critr 75     
+   #:critd 150    
    #:attacks attack-chain
-   #:weapon test-weapon
-   #:skill basic-slash 
-   #:burst all-attack-up
-   #:artifacts test-feather
-   test-goblet
+   #:weapon vitality-staff
+   #:skill super-charge 
+   #:burst holy-blast
+   #:artifacts heros-cap
+   universal-timepiece
    )
 
  (define-enemy dummy
@@ -124,24 +177,18 @@ Here is a simple example that defines two similar characters, two lineups, and r
    #:reduction 5
    )
 
- (define-team-lineup two-members (test-char test-char2))
- (define-team-lineup lone-member (test-char))
- (calculate-rotation-damage two-members dummy (E Q N N N N (Swap 1) N N N ND))
- (calculate-rotation-damage lone-member dummy (N N N N N N N N N N N N))
+ (define-team-lineup all-alone (diluc))
+ 
+ (define-team-lineup best-friends (diluc zhongli))
+ 
+ (calculate-rotation-damage all-alone dummy (N N N N N N N N N N N N))
+
+ (calculate-rotation-damage best-friends dummy (E Q N N N N (Swap 2) E Q N N N ND))
  )
 
 Example Print Output:
 
 Thanks for using ELEMENTS!
-
-[]=======================================================================================[]
-  Simulation run with input string: (E Q N N N N (Swap 1) N N N ND)
-  Total damage: 34020.32 Total time: 5.7 seconds DPS: 5968.48
-
-
-  The best run with this layout was a sequence of: (E Q N N N N (Swap 1) N N N ND)
-  Total damage: 34020.32 Total time 5.7 seconds DPS: 5968.48
-[]=======================================================================================[]
 
 []=======================================================================================[]
   Simulation run with input string: (N N N N N N N N N N N N)
@@ -150,6 +197,15 @@ Thanks for using ELEMENTS!
 
   The best run with this layout was a sequence of: (N N N N N N N N N N N N)
   Total damage: 44781.5 Total time 9.0 seconds DPS: 4975.72
+[]=======================================================================================[]
+
+[]=======================================================================================[]
+  Simulation run with input string: (E Q N N N N (Swap 2) E Q N N N ND)
+  Total damage: 725403.92 Total time: 9.7 seconds DPS: 74783.91
+
+
+  The best run with this layout was a sequence of: (E Q N N N N (Swap 2) E Q N N N ND)
+  Total damage: 725403.92 Total time 9.7 seconds DPS: 74783.91
 []=======================================================================================[]
 ```
 As seen above, `elements` allows for descriptive definitions of weapons, artifacts, characters, and more. This allows users to easily define new characters with varying stats, or modify current characters by applying new weapons, artifacts, or even useable skills.

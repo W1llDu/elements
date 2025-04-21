@@ -570,12 +570,13 @@
   (require rackunit)
 
   ;; define runtime versions of macros
-  (define attack-chain (make-attack-sequence (list (make-attack (make-attribute 'atk (make-percent 'atk% 10)) 0.5 'physical)
-                                                   (make-attack (make-attribute 'atk (make-percent 'atk% 25)) 0.2 'physical)
-                                                   (make-attack (make-attribute 'atk (make-percent 'atk% 125)) 0.8 'physical)
-                                                   (make-attack (make-attribute 'atk (make-percent 'atk% 250)) 1.5 'physical))
-                                             (make-attack (make-attribute 'hp (make-percent 'hp% 5)) 3.5 'pyro)
-                                             (make-attack (make-attribute 'hp (make-percent 'hp% 10)) 3.5 'physical)))
+  (define attack-chain (make-attack-sequence
+                        (list (make-attack (make-attribute 'atk (make-percent 'atk% 10)) 0.5 'physical)
+                              (make-attack (make-attribute 'atk (make-percent 'atk% 25)) 0.2 'physical)
+                              (make-attack (make-attribute 'atk (make-percent 'atk% 125)) 0.8 'physical)
+                              (make-attack (make-attribute 'atk (make-percent 'atk% 250)) 1.5 'physical))
+                        (make-attack (make-attribute 'hp (make-percent 'hp% 5)) 3.5 'pyro)
+                        (make-attack (make-attribute 'hp (make-percent 'hp% 10)) 3.5 'physical)))
     
   (define test-weapon
     (make-weapon 450 (make-attribute 'critr 24.1)

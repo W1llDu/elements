@@ -15,17 +15,22 @@
   (require racket/list)
 
   ;; helper to check for duplicate names in the hash table
+  ;; check-duplicates : Symbol Hash Expr Symbol
   (define (check-duplicates name result expr symbol)
     (when (member (syntax->datum name) (apply append (hash-values result)))
       (raise-syntax-error symbol "a duplicate name was found" expr name)))
 
   ;; helper to  update the hash table storing names
+  ;; update-hash : Symbol Symbol Hash -> Void
   (define (update-hash symbol name result)
     (hash-set result
               symbol
               (cons (syntax->datum name)
                     (hash-ref result symbol))))
 
+  ;; Main compile function, used to check duplicates and provide
+  ;; good error messages, returns true if nothing errors
+  ;; compile-genshin : (List Expr) -> Boolean
   (define (compile-genshin exprs)
     (foldl (λ (expr result)
              (if (hash? result)

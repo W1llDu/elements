@@ -18,27 +18,110 @@
          calc-dmg
          clear-file)
 
+;; An AttackKey is a Symbol
+;; Representing a character attack, being one of
+;; 'N 'C 'E 'Q, or 'ND
+
+;; A base stat is a Symbol
+;; Representing one of a character's basic stats, being one of
+;; 'hp 'atk 'def or 'em
+
+;; An Element is a Symbol
+;; Representing an elemental type, being one of
+;; 'pyro 'hydro 'cryo 'electro 'geo 'anemo 'dendro or 'physical
+
+
+;; A Character is a (character Number Number Number Number Number Number AttackSequence Weapon Skill Skill (ListOf Artifact))
+;; Representing a character with base stats, crit stats, attacks, a weapon, a skill, a burst,
+;; and a list of artifacts
 (define-struct character [hp def atk critr critd em attacks weapon skill burst artifacts] #:transparent)
+
+;; A Weapon is a (weapon Number Attribute (ListOf Buff))
+;; Representing a weapon with a set damage, stat attribute, and list of buffs
 (define-struct weapon [atk substat buffs] #:transparent)
+
+;; A Skill is a (skill Number Attribute Element (ListOf TriggerBuff))
+;; Representing a skill/burst with a cooldown, damage attribute, duration, element type,
+;; and a list of buffs
 (define-struct skill [cd attr duration type buffs] #:transparent)
+
+;; An Attack is a (attack Attribute Number Element)
+;; Representing an attack with a damage attribute, duration, and element type
 (define-struct attack [attr duration type] #:transparent) ; split attr
+
+;; An Artifact is a (artifact String Attribute (ListOf Attribute))
+;; Representing an artifact belonging to a specific set, with a main attribute
+;; and multiple subattributes
 (define-struct artifact [set-name main-stat substats] #:transparent)
-(define-struct triggered-buff [effect trigger limit party-wide duration] #:transparent)
+
+;; A Buff is a UnconditionalBuff, or a TriggerBuff
+
+;; An UnconditionalBuff is a (unconditional-buff BuffAttribute Boolean)
+;; Representing an always active buff with an attribute and an indicator to whether
+;; it impacts all party members
 (define-struct unconditional-buff [effect party-wide] #:transparent)
+
+;; A TriggerBuff is a TriggeredBuff or an AppliedBuff
+
+;; A TriggeredBuff is a (triggered-buff BuffAttribute Symbol Number Boolean Number)
+;; Representing a buff with a trigger, attribute, max limit, duration, and indicator to
+;; whether it impacts all party members
+(define-struct triggered-buff [effect trigger limit party-wide duration] #:transparent)
+
+;; An AppliedBuff is a (applied-buff BuffAttribute Number Boolean Duration)
+;; Representing a buff with an attribute, max limit, duration, and indicator to
+;; whether it impacts all party members, but without any specific trigger
 (define-struct applied-buff [effect limit party-wide duration] #:transparent)
+
+;; An AttackSequence is a (attack-sequence (ListOf Attack) Attack Attack)
+;; Representing a sequence of Normal Attacks, alongside a charged attack and plunging attack
 (define-struct attack-sequence [normals charged plunge] #:transparent)
-(define-struct attribute [attr modifier] #:transparent) ; amount is either number or percent (what is valid depends on attr)
+
+;; An Attribute is an Attribute or a BuffAttribute
+
+;; An Attribute is a (Symbol Number), where the symbol represents a certain stat
+
+;; A BuffAttribute is a (Symbol Number) or a (Symbol Percent),
+;; where the symbols represent certain stats
+
+(define-struct attribute [attr modifier] #:transparent) ; amount is either number or percent (what is valid depends on attr)\\
+
+;; A Percent is a (Symbol Number), where the symbol represents a scaling stat
 (define-struct percent [attr p] #:transparent)
+
+;; An Enemy is a (enemy Number ResistanceSet Number)
+;; Representing an enemy with a defense stat, various resistances, and an overall damage reduction value
 (define-struct enemy [def res reduction] #:transparent)
+
+;; A ResistanceSet is a (resistances Number Number Number Number Number Number Number Number)
+;; Representing a set of resistances to all 7 elements, plus non elemental physical attacks
 (define-struct resistances [pyro hydro electro cryo geo anemo dendro physical] #:transparent)
 
 ; to make passing arguments much easier
+;; An AccData is a ((ListOf Character) (ListOf Attack) Attack Attack (ListOf Buff) Symbol Number Number)
+;; Representing data that is updated as damage calculations go on, including the current total time, damage,
+;; and next attack in the normal attack sequence. It also stores buffs that are currently active, and the
+;; element currently applied to the enemy (for the sake of elemental reactions)
 (define-struct acc-data [team enemy attack-string cc nc active-buffs enemy-element dmg time])
  
 ; internal
+
+;; A FlatCharacter is a (flat-char Number Number Number Number Number Number AttackSequence FlatSkill FlatSkill (ListOf Buff) (ListOf Buff))
+;; Representing a flattened Character, with more data available near the surface
 (define-struct flat-char [hp atk def critr critd em attacks skill burst unconditional-buffs trigger-buffs])
+
+;; A FlatSkill is a (flat-skill Number BuffAttribute Number Element)
+;; Representing a flattened Skill/Burst, with more data available near the surface
 (define-struct flat-skill [cd attr duration type])
+
+;; A StatInfo is a (stat-info Number Number Number Number Number Number)
+;; Representing the current stat values during a calculation
 (define-struct stat-info [hp atk def critr critd em])
+
+;; A DamageInfo is a (damage-info Number Number Number Number Number Number Number Number Number)
+;; Representing the information needed to calculate attack damage, including the base damage,
+;; base damage multiplier, additional base damage, damage multiplier, defense multiplier,
+;; resistances, amplification multiplier (for reactions), crit rate, and crit damage
 (define-struct damage-info [base-dmg base-dmg-mult base-add
                                      dmg-mult
                                      def-mult
@@ -46,13 +129,14 @@
                                      amp-mult
                                      critr
                                      critd])
+
 ; base-dmg-mult: talent/constellation
 ; base-add: talent/constellation/weapon/artifact (increase by scaling amount (def% 56))
 
 ; final output: dmg, time
 
 ; calculate the total damage a team does to an enemy, given an attack string
-; calc-dmg : (List Character) Enemy (List Attack-Key) -> (Tuple Integer Integer)
+; calc-dmg : (List Character) Enemy (List AttackKey) -> (Tuple Integer Integer)
 (define (calc-dmg team enemy attack-string)
   ; pull out party-wide uncond buffs into active-buffs?
   (define result (calc-dmg/acc (make-acc-data (map flatten-char team) enemy attack-string 1 1 empty 'none 0 0)))
@@ -61,7 +145,7 @@
   result)
 
 ; flattens character to make buffs more accessible
-; flatten-char : Character -> Flat-Character
+; flatten-char : Character -> FlatCharacter
 (define (flatten-char char)
   (make-flat-char (character-hp char)
                   (+ (character-atk char) (weapon-atk (character-weapon char)))
@@ -77,7 +161,7 @@
                   (flatten-triggered char)))
 
 ; flattens skills like characters
-; flatten-skill : Skill -> Flat-Skill
+; flatten-skill : Skill -> FlatSkill
 (define (flatten-skill skill)
   (make-flat-skill (skill-cd skill)
                    (skill-attr skill)
@@ -85,7 +169,7 @@
                    (skill-type skill)))
 
 ; flatten unconditional buffs for easier representation
-; flatten-unconditional : Character -> (List Unconditional-Buff)
+; flatten-unconditional : Character -> (List UnconditionalBuff)
 (define (flatten-unconditional char)
   (append (filter unconditional-buff? (append (cons (attr->unconditional (weapon-substat (character-weapon char)))
                                                     (weapon-buffs (character-weapon char)))
@@ -97,12 +181,12 @@
                              (character-artifacts char)))))
 
 ; attribute to unconditional (for artifacts)
-; attr->unconditional : Attribute -> Unconditional-Buff
+; attr->unconditional : Attribute -> UnconditionalBuff
 (define (attr->unconditional attr)
   (make-unconditional-buff attr #f))
 
 ; flatten triggered buffs for easier representation
-; flatten-triggered : Character -> (List Triggered-Buff)
+; flatten-triggered : Character -> (List TriggeredBuff)
 (define (flatten-triggered char)
   ; weapon trigger: on normal&charged
   ; skill/burst trigger: on skill/burst
@@ -116,13 +200,13 @@
           (convert-to-triggered 'burst (skill-buffs (character-burst char)))))
 
 ; convert applied buffs to corresponding triggered buffs for easier calculation
-; convert-to-triggered : Attack-Trigger (List Buff) -> (List Triggered-Buff)
+; convert-to-triggered : Attack-Trigger (List Buff) -> (List TriggeredBuff)
 (define (convert-to-triggered trigger buffs)
   (map (λ (buff) (applied->triggered buff trigger))
        (filter applied-buff? buffs)))
 
 ; convert all applied buffs into triggered buffs to make calculation easier
-; applied->triggered : Applied-Buff Attack-Trigger -> Triggered-Buff
+; applied->triggered : Applied-Buff Attack-Trigger -> TriggeredBuff
 (define (applied->triggered applied trigger)
   (make-triggered-buff (applied-buff-effect applied)
                        trigger
@@ -131,7 +215,7 @@
                        (applied-buff-duration applied)))
 
 ; main loop calculate the total damage and time taken for a rotation
-; calc-dmg/acc : Acc-Data -> (Tuple Integer Integer)
+; calc-dmg/acc : AccData -> (Tuple Integer Integer)
 (define (calc-dmg/acc acc-values) ; more acc args like buffs (later)
   ; define struct data
   (define attack-string (acc-data-attack-string acc-values))
@@ -143,7 +227,7 @@
          (update-and-calculate acc-values)]))
 
 ; assign the necessary new values for the next attack and calculate damage
-; update-and-calculate : Acc-Data -> (Tuple Integer Integer)
+; update-and-calculate : AccData -> (Tuple Integer Integer)
 (define (update-and-calculate acc-values)
   ; define struct data
   (define attack-string (acc-data-attack-string acc-values))
@@ -202,7 +286,7 @@
                                      time*)))))
 
 ; determine the next nc
-; determine-next-nc : Acc-Data Character Attack-Key -> Integer
+; determine-next-nc : AccData Character AttackKey -> Integer
 (define (determine-next-nc acc-values char attack)
   (define nc (acc-data-nc acc-values))
   (if (and (symbol? attack) (symbol=? 'N attack))
@@ -214,7 +298,7 @@
       1))
 
 ; calculate the duration of the current attack
-; calc-duration : Acc-Data Character Attack-Key -> Number
+; calc-duration : AccData Character AttackKey -> Number
 (define (calc-duration acc-values char attack)
   (define nc (acc-data-nc acc-values))
   (cond [(list? attack) 1]
@@ -231,7 +315,7 @@
         ))
 
 ; add newly triggered buffs
-; add-new-triggered : Acc-Data Character Attack-Key -> (List Buff)
+; add-new-triggered : AccData Character AttackKey -> (List Buff)
 (define (add-new-triggered acc-values char attack)
   (merge-buffs (filter (λ (buff) (symbol=? (triggered-buff-trigger buff)
                                            (attack->trigger attack)))
@@ -239,7 +323,7 @@
                (acc-data-active-buffs acc-values)))
 
 ; turn attack-key into a trigger
-; attack->trigger : Attack-Key -> Attack-Trigger
+; attack->trigger : AttackKey -> Attack-Trigger
 (define (attack->trigger attack)
   (match attack
     ['N 'normal-attack]
@@ -303,7 +387,7 @@
                active-buffs*)))
 
 ; determine the action the character is taking
-; determine-action : Acc-Data Character Attack-Key -> (Or Empty Attack Flat-Skill)
+; determine-action : AccData FlatCharacter AttackKey -> (Or Empty Attack FlatSkill)
 (define (determine-action acc-values char attack)
   (cond [(list? attack) '()]
         [(or (symbol=? 'N attack) (symbol=? 'ND attack))
@@ -314,7 +398,7 @@
         [(symbol=? 'Q attack) (flat-char-burst char)]))
 
 ; determine the type of the characters action
-; deterimne-type : Attack-Key (Or Empty Attack Flat-Skill) -> Element
+; deterimne-type : AttackKey (Or Empty Attack FlatSkill) -> Element
 (define (determine-type attack action)
   (cond [(list? attack) '()]
         [(or (symbol=? 'N attack) (symbol=? 'ND attack) (symbol=? 'C attack))
@@ -323,7 +407,7 @@
          (flat-skill-type action)]))
 
 ; determine the next element of the enemy
-; determine-enemy-element : Acc-Data Element Element (Or Empty Attack Flat-Skill) -> Element
+; determine-enemy-element : AccData Element Element (Or Empty Attack FlatSkill) -> Element
 (define (determine-enemy-element acc-values type attack)
   (define enemy-element (acc-data-enemy-element acc-values))
   (cond [(list? attack) enemy-element]
@@ -334,7 +418,7 @@
         [else 'none]))
 
 ; determine the attribute of the character's action
-; determine-action-attribute : (Or Empty Attack Flat-Skill) Attack-Key -> Attribute
+; determine-action-attribute : (Or Empty Attack FlatSkill) AttackKey -> Attribute
 (define (determine-action-attribute action attack)
   (cond [(list? attack) '()]
         [(or (symbol=? 'N attack) (symbol=? 'ND attack) (symbol=? 'C attack))
@@ -344,7 +428,7 @@
 
 ; stage 2
 ; determine the total damage following the action
-; determine-damage : Acc-Data Character Attack-Key (List Buff) Element Attribute -> Number
+; determine-damage : AccData FlatCharacter AttackKey (List Buff) Element Attribute -> Number
 (define (determine-damage acc-values char attack active-buffs* type attr)
   (define dmg (acc-data-dmg acc-values))
   (define enemy (acc-data-enemy acc-values))
@@ -368,7 +452,7 @@
               (calc-crit (min (stat-info-critr stats) 100) (stat-info-critd stats)))))))
 
 ; do a tree traversal (abstract out, use symbols?) flat incr vs incr by other amt (atk (def% 50)) increases atk by 50% of base def
-; calc-total-stats : Character (List Buff) -> Stat-Info
+; calc-total-stats : FlatCharacter (List Buff) -> Stat-Info
 (define (calc-total-stats char active-buffs)
   ; remember to scale % to decimal
   ; % is already desugared
@@ -390,14 +474,14 @@
                     (apply-all-modifiers buffs base-stat-info (flat-char-em char) 'em))))
 
 ; applies all buffs of a specified category
-; apply-all-modifiers : (List Buff) Stat-Info Number Base-Stat -> Number
+; apply-all-modifiers : (List Buff) StatInfo Number BaseStat -> Number
 (define (apply-all-modifiers buffs base-stat-info base-attr symbol)
   (+ base-attr
      (apply + (map (λ (modifier) (calc-modifier modifier base-stat-info))
                    (get-mods-with-attr buffs symbol)))))
 
 ; gets modifiers of buffs that increase the given scaling-stat
-; get-mods-with-attr : (List Buff) Scaling-Stat -> (List Modifier)
+; get-mods-with-attr : (List Buff) ScalingStat -> (List Modifier)
 (define (get-mods-with-attr buffs attr)
   ; convert to modifier
   (map (λ (buff) (cond [(unconditional-buff? buff)
@@ -415,7 +499,7 @@
                buffs)))
 
 ; calculate how much a modifer augments the given base stats
-; calc-modifer : (Or Number Percent) Stat-Info -> Number
+; calc-modifer : (Or Number Percent) StatInfo -> Number
 (define (calc-modifier modifier base-stats)
   (if (number? modifier)
       modifier
@@ -424,7 +508,7 @@
          (lookup-stat base-stats (percent-attr modifier)))))
 
 ; calculate base damage
-; calc-base-attr : Attribute Stat-Info -> Number
+; calc-base-attr : Attribute StatInfo -> Number
 (define (calc-base-dmg attr stats)
   ; ignore attribute-attr
   ; must be percent
@@ -433,7 +517,7 @@
      (lookup-stat stats (percent-attr (attribute-modifier attr)))))
 
 ; match a stat symbol to its proper stat info
-; lookup-stat : Stat-Info Percent-Stat -> Number
+; lookup-stat : Stat-Info PercentStat -> Number
 (define (lookup-stat stats attr)
   (case attr
     ['atk% (stat-info-atk stats)]
@@ -443,7 +527,7 @@
     ))
 
 ; calculate the resistance to a given element
-; calc-res : Resistances Element -> Number
+; calc-res : ResistanceSet Element -> Number
 (define (calc-res ress type)
   (let ([res (/ (lookup-res ress type) 100)])
     (cond [(< res 0) (- 1 (/ res 2))]
@@ -451,7 +535,7 @@
           [else (- 1 res)])))
 
 ; match an element symbol to its proper resistance
-; lookup-res : Resistances Element -> Number
+; lookup-res : ResistanceSet Element -> Number
 (define (lookup-res ress type)
   (case type
     ['pyro (resistances-pyro ress)]

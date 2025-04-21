@@ -16,12 +16,12 @@ Here is a simple example that defines two similar characters, two lineups, and r
 (genshin-calc
 
  (define-attack-sequence attack-chain
-   ([(dmg atk% 10) 0.5 physical]
-    [(dmg atk% 25) 0.2 physical]
-    [(dmg atk% 125) 0.8 physical]
-    [(dmg atk% 250) 1.5 physical]
-    #:charged [(dmg hp% 5) 3.5 pyro]
-    #:plunging [(dmg hp% 10) 3.5 physical]))
+   ([(base-dmg atk% 10) 0.5 physical]
+    [(base-dmg atk% 25) 0.2 physical]
+    [(base-dmg atk% 125) 0.8 physical]
+    [(base-dmg atk% 250) 1.5 physical]
+    #:charged [(base-dmg hp% 5) 3.5 pyro]
+    #:plunging [(base-dmg hp% 10) 3.5 physical]))
 
  (define-weapon test-weapon
    450 ;; base attack stat
@@ -42,7 +42,7 @@ Here is a simple example that defines two similar characters, two lineups, and r
 
  (define-skill all-attack-up
    #:cooldown 25.0
-   #:attr (dmg atk% 125)
+   #:attr (base-dmg atk% 125)
    #:duration 0.1
    #:type pyro
    (applied-buff
@@ -55,7 +55,7 @@ Here is a simple example that defines two similar characters, two lineups, and r
 
  (define-skill basic-slash
    #:cooldown 5.0 ;; cooldown
-   #:attr (dmg atk% 25)
+   #:attr (base-dmg atk% 25)
    #:duration 1.0 ;; duration (where character cannot do anything else)
    #:type pyro
    (applied-buff
@@ -129,6 +129,27 @@ Here is a simple example that defines two similar characters, two lineups, and r
  (calculate-rotation-damage two-members dummy (E Q N N N N (Swap 1) N N N ND))
  (calculate-rotation-damage lone-member dummy (N N N N N N N N N N N N))
  )
+
+Example Print Output:
+Thanks for using ELEMENTS!
+
+[]=======================================================================================[]
+  Simulation run with input string: (E Q N N N N (Swap 1) N N N ND)
+  Total damage: 34020.32 Total time: 5.7 seconds DPS: 5968.48
+
+
+  The best run with this layout was a sequence of: (E Q N N N N (Swap 1) N N N ND)
+  Total damage: 34020.32 Total time 5.7 seconds DPS: 5968.48
+[]=======================================================================================[]
+
+[]=======================================================================================[]
+  Simulation run with input string: (N N N N N N N N N N N N)
+  Total damage: 44781.5 Total time: 9.0 seconds DPS: 4975.72
+
+
+  The best run with this layout was a sequence of: (N N N N N N N N N N N N)
+  Total damage: 44781.5 Total time 9.0 seconds DPS: 4975.72
+[]=======================================================================================[]
 ```
 As seen above, `elements` allows for descriptive definitions of weapons, artifacts, characters, and more. This allows users to easily define new characters with varying stats, or modify current characters by applying new weapons, artifacts, or even useable skills.
 Keywords also make the definitions easier to read, allowing their meanings to be reasonably readable without the need to check documentation notes. 

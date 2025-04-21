@@ -16,7 +16,6 @@
                         #:charged [(base-dmg hp% 5) 3.5 pyro]
                         #:plunging [(base-dmg hp% 10) 3.5 physical]))
 
-
                      (define-weapon test-weapon
                        450 ;; base attack stat
                        (mod critr 24.1) ;; substat (crit rate)
@@ -235,7 +234,7 @@
                  (define-team-lineup two-members (test-char test-char2))
                  (define-team-lineup lone-member (test-char))
                  (calculate-raw-rotation-damage two-members dummy (E Q N N N N (Swap 1) N N N ND)))
-                '(28094.508950860003 5.699999999999999)))
+                '(34020.31627861 5.699999999999999)))
 
 (module+ test
   (require rackunit syntax/macro-testing) 
@@ -470,19 +469,27 @@
                                (define-team-lineup two-members (test-char test-char2))
                                (define-team-lineup lone-member (test-char))
                                (calculate-raw-rotation-damage two-members dummy (N))))))
-                '(300.6606644800001 0.5)))
+                '(364.07722648000004 0.5)))
 
 (module+ test
   (require rackunit syntax/macro-testing)
   ;; done without genshin calc since we do not need to worry
   ;; about compile time errors here
-   (define-attack-sequence attack-chain
-     ([(base-dmg atk% 10) 0.5 physical]
-      [(base-dmg atk% 25) 0.2 physical]
-      [(base-dmg atk% 125) 0.8 physical]
-      [(base-dmg atk% 250) 1.5 physical]
-      #:charged [(base-dmg hp% 5) 3.5 pyro]
-      #:plunging [(base-dmg hp% 10) 3.5 physical]))
+  (define-attack-sequence attack-chain
+    ([(base-dmg atk% 10) 0.5 physical]
+     [(base-dmg atk% 25) 0.2 physical]
+     [(base-dmg atk% 125) 0.8 physical]
+     [(base-dmg atk% 250) 1.5 physical]
+     #:charged [(base-dmg hp% 5) 3.5 pyro]
+     #:plunging [(base-dmg hp% 10) 3.5 physical]))
+
+  (define-attack-sequence attack-chain2
+    ([(base-dmg atk% 100) 0.5 physical]
+     [(base-dmg atk% 100) 0.2 physical]
+     [(base-dmg atk% 100) 0.8 physical]
+     [(base-dmg atk% 100) 1.5 physical]
+     #:charged [(base-dmg hp% 100) 3.5 pyro]
+     #:plunging [(base-dmg hp% 100) 3.5 physical]))
 
 
    (define-weapon test-weapon
@@ -501,6 +508,11 @@
        #:effect (buff critd 20) ;; increase crit damage by 20%
        #:party-wide #f])
      )
+
+  (define-weapon test-weapon2
+     0 ;; base attack stat
+     (mod critr 0) ;; substat (crit rate)
+    )
 
    ;; note : duration is optional
    (define-skill all-attack-up
@@ -591,6 +603,20 @@
      test-goblet
      )
 
+  ;; manual calculations
+  (define-character test-char4
+     #:hp 3000 ;; base hp
+     #:def 500   ;; base def
+     #:atk 1000   ;; base atk
+     #:em 20    ;; base em
+     #:critr 100     ;; base crit rate
+     #:critd 100    ;; base crit damage
+     #:attacks attack-chain2
+     #:weapon test-weapon2 ;; weapon
+     #:skill basic-slash ;; skill
+     #:burst all-attack-up ;; burst
+     #:artifacts)
+
   (define-enemy dummy
     #|#:type Pyro|# ; for reactions
     #:def 1000
@@ -636,26 +662,35 @@
   (define-team-lineup two-members (test-char test-char2))
   (define-team-lineup lone-member (test-char))
   (define-team-lineup lone-member-better (test-char3))
-  (check-equal? (calculate-raw-rotation-damage two-members dummy (C C C C)) '(1663.2528 14.0))
+  (define-team-lineup lone-member-easy (test-char4))
+  (check-equal? (calculate-raw-rotation-damage two-members dummy (C C C C)) '(2014.0728 14.0))
   ;; try with a buff
-  (check-equal? (calculate-raw-rotation-damage two-members dummy (E Q C C C C)) '(3542.9017195 15.1))
-  (check-equal? (calculate-raw-rotation-damage two-members dummy (N N N N)) '(12327.087243680002 3.0))
+  (check-equal? (calculate-raw-rotation-damage two-members dummy (E Q C C C C)) '(4290.184863249999 15.1))
+  (check-equal? (calculate-raw-rotation-damage two-members dummy (N N N N)) '(14927.16628568 3.0))
   ;; ND should lower time but decrease damage by a margin
-  (check-equal? (calculate-raw-rotation-damage two-members dummy (ND ND ND ND)) '(1037.9806307200001 0.4))
+  (check-equal? (calculate-raw-rotation-damage two-members dummy (ND ND ND ND)) '(1256.9156987200001 0.4))
   ;; swap?
-  (check-equal? (calculate-raw-rotation-damage two-members dummy (N C N N N)) '(5527.044496160001 5.5))
+  (check-equal? (calculate-raw-rotation-damage two-members dummy (N C N N N)) '(6692.831050159999 5.5))
   ;; 1 second longer since switching is 1 second
-  (check-equal? (calculate-raw-rotation-damage two-members dummy (N C (Swap 2) N N N)) '(6177.45742416 6.5))
+  (check-equal? (calculate-raw-rotation-damage two-members dummy (N C (Swap 2) N N N)) '(7291.18317816 6.5))
   ;; compare 2 characters side by side
-  (check-equal? (calculate-raw-rotation-damage lone-member dummy (N N N N N)) '(12627.747908160001 3.5))
-  (check-equal? (calculate-raw-rotation-damage lone-member-better dummy (N N N N N)) '(54126.552480000006 3.5))
+  (check-equal? (calculate-raw-rotation-damage lone-member dummy (N N N N N)) '(15291.24351216 3.5))
+  (check-equal? (calculate-raw-rotation-damage lone-member-better dummy (N N N N N)) '(184937.23247999998 3.5))
   ;; increase attack
-  (check-equal? (calculate-raw-rotation-damage lone-member-better dummy (Q N N N N N)) '(61517.528730000005 3.6))
+  (check-equal? (calculate-raw-rotation-damage lone-member-better dummy (Q N N N N N)) '(210190.39623 3.6))
   ;; enemy resistances
-  (check-equal? (calculate-raw-rotation-damage lone-member tough-dummy (N N N N N)) '(2314.469924516129 3.5))
-  (check-equal? (calculate-raw-rotation-damage lone-member-better tough-dummy (N N N N N)) '(9920.555806451614 3.5))
+  (check-equal? (calculate-raw-rotation-damage lone-member tough-dummy (N N N N N)) '(2802.6472712903224 3.5))
+  (check-equal? (calculate-raw-rotation-damage lone-member-better tough-dummy (N N N N N)) '(33896.120322580646 3.5))
   ;; very simple calc
-  (check-equal? (calculate-raw-rotation-damage lone-member-better default-dummy (N)) '(1171.5704 0.5))
+  (check-equal? (calculate-raw-rotation-damage lone-member-better default-dummy (N)) '(4002.9704 0.5))
+  
+  ;; manual calculation tests
+  (check-equal? (calculate-raw-rotation-damage lone-member-easy default-dummy (N)) '(2000.0 0.5))
+  (check-equal? (calculate-raw-rotation-damage lone-member-easy default-dummy (N N N N N)) '(10000.0 3.5))
+  (check-equal? (calculate-raw-rotation-damage lone-member-easy default-dummy (C C C)) '(18000.0 10.5))
+  ;; fine... off by like 1 trillionth. This is why we chose to round when displaying.
+  (check-equal? (calculate-raw-rotation-damage lone-member-easy default-dummy (C C C ND ND ND)) '(24000.0 10.799999999999999))
+  (check-equal? (calculate-raw-rotation-damage lone-member-easy default-dummy (Q)) '(2812.5 0.1))
   )
 
 

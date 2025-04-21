@@ -379,7 +379,7 @@
           #:em em:number #:critr critr:number #:critd critd:number
           #:attacks attacks:id #:weapon weapon:id #:skill skill:id
           #:burst burst:id #:artifacts artifacts:id ...)
-       #'(define name (make-character hp def atk em critr critd
+       #'(define name (make-character hp def atk critr critd em 
                                       attacks weapon skill burst
                                       (list artifacts ...)))])))
 

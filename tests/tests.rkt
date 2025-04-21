@@ -619,6 +619,20 @@
     #:reduction 99
     )
 
+  (define-enemy default-dummy
+    #|#:type Pyro|# ; for reactions
+    #:def 0
+    #:res (#:pyro 0
+           #:hydro 0
+           #:electro 0
+           #:cryo 0
+           #:geo 0
+           #:anemo 0
+           #:dendro 0
+           #:physical 0)
+    #:reduction 0
+    )
+
   (define-team-lineup two-members (test-char test-char2))
   (define-team-lineup lone-member (test-char))
   (define-team-lineup lone-member-better (test-char3))
@@ -640,6 +654,8 @@
   ;; enemy resistances
   (check-equal? (calculate-raw-rotation-damage lone-member tough-dummy (N N N N N)) '(2314.469924516129 3.5))
   (check-equal? (calculate-raw-rotation-damage lone-member-better tough-dummy (N N N N N)) '(9920.555806451614 3.5))
+  ;; very simple calc
+  (check-equal? (calculate-raw-rotation-damage lone-member-better default-dummy (N)) '(1171.5704 0.5))
   )
 
 

@@ -16,10 +16,15 @@
 @author+email["Will Du" "du.wi@northeastern.edu"]
 
 @defmodule[elements]
-@link["https://genshin.hoyoverse.com/en/"]{Genshin Impact} is an open world RPG released in 2020. In Genshin, you control a team of up to four characters, and engage in various levels of combat.
-The goal is typically to clear content as fast as possible, which requires efficient team rotations with high levels of sustained damage.
-This package implements a damage calculator as a hosted DSL. With @tt{elements}, you can easily define the basics of a team lineup, including weapons, elemental skills, and characters.
-From there, you can setup damage rotations against enemies of varying toughness, and calculate potential damage output. Additionally, @tt{elements} compares old rotations to newer ones,
+@link["https://genshin.hoyoverse.com/en/"]{Genshin Impact} is an open world RPG released in 2020.
+In Genshin, you control a team of up to four characters, and engage in various levels of combat.
+The goal is typically to clear content as fast as possible,
+which requires efficient team rotations with high levels of sustained damage.
+This package implements a damage calculator as a hosted DSL.
+With @tt{elements}, you can easily define the basics of a team lineup, including weapons, elemental skills, and characters.
+From there, you can setup damage rotations against enemies of varying toughness,
+and calculate potential damage output.
+Additionally, @tt{elements} compares old rotations to newer ones,
 allowing you to easily keep track of what combination has provided the highest sustained damage. 
 
 @defform[(genshin-calc expr ...)]{
@@ -34,7 +39,8 @@ allowing you to easily keep track of what combination has provided the highest s
                       [attr modifier-attribute?]
                       [buffs buff?])]{
 
- Defines a @deftech{weapon} with a base attack number that buffs a characters stats based on the given @tech{modifier attribute} @racket[attr]. The weapon also has a list of @tech{buffs}.
+ Defines a @deftech{weapon} with a base attack number that buffs a characters stats based on the given
+ @tech{modifier attribute} @racket[attr]. The weapon also has a list of @tech{buffs}.
 
 }
 
@@ -68,7 +74,8 @@ allowing you to easily keep track of what combination has provided the highest s
                       [type element?]
                       [buffs buff?])]{
 
- Defines a character @deftech{skill}/burst that has a cooldown, duration, and a list of @tech{buffs}. The skill also deals damage based on the given @tech{damage attribute} @racket[attr].
+ Defines a character @deftech{skill}/burst that has a cooldown, duration,
+ and a list of @tech{buffs}. The skill also deals damage based on the given @tech{damage attribute} @racket[attr].
                                                                                                                    
 
 }
@@ -115,9 +122,11 @@ allowing you to easily keep track of what combination has provided the highest s
                       [duration3 number?]
                       [type3 element?])]{
 
- Defines a character's @deftech{attack sequence}. Each attack has its own unique duration and an @tech{element} @racket[type]. Attacks deal damage
+ Defines a character's @deftech{attack sequence}.
+ Each attack has its own unique duration and an @tech{element} @racket[type]. Attacks deal damage
  based on the given @tech{damage attribute} @racket[attr].                                                                                     
- An attack sequence also includes a charged and plunging attack, with their own corresponding duration, damage, and element type.                                                                                                
+ An attack sequence also includes a charged and plunging attack,
+ with their own corresponding duration, damage, and element type.                                                                                                
 
 }
 
@@ -139,8 +148,11 @@ allowing you to easily keep track of what combination has provided the highest s
                       [main-attr modifier-attribute?]
                       [sub-attr modifier-attribute?])]{
 
- Defines an @deftech{artifact} piece. Artifacts belong to a set, specified by the string provided by @racket[set-name]. Each artifact also augments a character's @tech{stats} with a
- @tech{modifier attribute} @racket[main-attr], as well as a list of more @tech{modifier attribute} sub attributes.                                                                                        
+ Defines an @deftech{artifact} piece. Artifacts belong to a set,
+ specified by the string provided by @racket[set-name].
+ Each artifact also augments a character's @tech{stats} with a
+ @tech{modifier attribute} @racket[main-attr],
+ as well as a list of more @tech{modifier attribute} sub attributes.                                                                                        
 
 }
 
@@ -179,8 +191,10 @@ allowing you to easily keep track of what combination has provided the highest s
                       [burst identifier?]
                       [artifacts identifier?])]{
 
- Defines a @deftech{character} that has a list of @tech{base stats} numbers, and the name of an attack string, weapon, skill, burst, and list of artifacts.
- Names must be defined with their respective "define-" type in order to be properly assigned to a character.
+ Defines a @deftech{character} that has a list of @tech{base stats} numbers,
+ and the name of an attack string, weapon, skill, burst, and list of artifacts.
+ Names must be defined with their respective "define-"
+ type in order to be properly assigned to a character.
 
 }
 
@@ -235,7 +249,8 @@ allowing you to easily keep track of what combination has provided the highest s
                       [physical number?]
                       [reduction number?])]{
 
- Defines an @deftech{enemy} that has numbers representing their defense, resistances to @tech{elements}, and overall damage reduction.
+ Defines an @deftech{enemy} that has numbers representing their defense,
+ resistances to @tech{elements}, and overall damage reduction.
 
 }
 
@@ -257,7 +272,8 @@ allowing you to easily keep track of what combination has provided the highest s
          #:contracts ([name identifier?]
                       [chars identifier?])]{
 
- Defines a @deftech{team lineup} that consists of a list of characters, which is used to calculate damage rotations.
+ Defines a @deftech{team lineup} that consists of a list of characters,
+ which is used to calculate damage rotations.
 
 }
 
@@ -270,7 +286,8 @@ allowing you to easily keep track of what combination has provided the highest s
                       [enemy identifier?]
                       [attk attack-key?])]{
 
- Calculates and displays the amount of damage done by a team lineup against a specified enemy, given a list of @tech{attack keys} specifying character actions. Also
+ Calculates and displays the amount of damage done by a team lineup against a specified enemy,
+ given a list of @tech{attack keys} specifying character actions. Also
  compares the result to previous entries with the same lineup and enemy, and displays the best saved calculation.
 
 }
@@ -284,7 +301,8 @@ allowing you to easily keep track of what combination has provided the highest s
                       [enemy identifier?]
                       [attk attack-key?])]{
 
- Calculates and displays the unformatted amount of damage done by a team lineup against a specified enemy, given a list of @tech{attack keys} specifying character actions.
+ Calculates and displays the unformatted amount of damage done by a team lineup against a specified enemy,
+ given a list of @tech{attack keys} specifying character actions.
 
 }
 
@@ -295,21 +313,25 @@ allowing you to easily keep track of what combination has provided the highest s
 @section{Buffs}
 @(define buff-syntax "buff syntax")
 
-A @deftech{buff} augments characters when active, changing the values of a character's @tech{stats} by a specified amount. A buff can either be a @racket[unconditional-buff], or a @tech{trigger-buff}.
+A @deftech{buff} augments characters when active, changing the values of a character's
+@tech{stats} by a specified amount.
+A buff can either be a @racket[unconditional-buff], or a @tech{trigger-buff}.
 @defform[#:kind buff-syntax
          (unconditional-buff [name #:effect attr
                               #:party-wide party-wide])
          #:contracts ([attr buff-attribute?]
                       [party-wide boolean?])]{
 
- An unconditional buff that always applies the attribute given by @racket[attr]. If @racket[party-wide] is @racket[#t], this buff will also apply to all characters in the lineup,
+ An unconditional buff that always applies the attribute given by @racket[attr].
+ If @racket[party-wide] is @racket[#t], this buff will also apply to all characters in the lineup,
  not just the character the buff is linked to.
 
 }
 
 @subsection{Trigger buffs}
 @(define trigger-buff-syntax "trigger buff syntax")
-A @deftech{trigger buff} augments characters, but unlike conditionals, is not always active. A trigger buff can be either a @racket[triggered-buff] or an @racket[applied-buff].
+A @deftech{trigger buff} augments characters, but unlike conditionals,
+is not always active. A trigger buff can be either a @racket[triggered-buff] or an @racket[applied-buff].
 
 @defform[#:kind trigger-buff-syntax
          (triggered-buff [name #:effect attr
@@ -323,9 +345,13 @@ A @deftech{trigger buff} augments characters, but unlike conditionals, is not al
                       [party-wide boolean?]
                       [duration number?])]{
 
- A triggered buff that applies the attribute given by @racket[attr], when a @tech{trigger} @racket[t] is performed by the character. The buff lasts for the specified time given by @racket[duration]
- before going inactive. Each triggered buff can stack up until the limit specified by @racket[limit], at which point any more activations of the buff will refresh the it at the max limit.
- If @racket[party-wide] is @racket[#t], this buff will also apply to all characters in the lineup, not just the character the buff is linked to.                                                     
+ A triggered buff that applies the attribute given by @racket[attr],
+ when a @tech{trigger} @racket[t] is performed by the character.
+ The buff lasts for the specified time given by @racket[duration]
+ before going inactive. Each triggered buff can stack up until the limit specified by @racket[limit],
+ at which point any more activations of the buff will refresh the it at the max limit.
+ If @racket[party-wide] is @racket[#t],
+ this buff will also apply to all characters in the lineup, not just the character the buff is linked to.                                                     
 }
 
 @defform[#:kind trigger-buff-syntax
@@ -338,9 +364,13 @@ A @deftech{trigger buff} augments characters, but unlike conditionals, is not al
                       [party-wide boolean?]
                       [duration number?])]{
 
- An applied buff that operates similarly to a @racket[triggered-buff], except without a specific @tech{trigger}. Once activated, an applied buff applies the attribute given by @racket[attr]. The buff lasts for the specified time given by @racket[duration]
- before going inactive. Each triggered buff can stack up until the limit specified by @racket[limit], at which point any more activations of the buff will refresh the it at the max limit.
- If @racket[party-wide] is @racket[#t], this buff will also apply to all characters in the lineup, not just the character the buff is linked to.                                                      
+ An applied buff that operates similarly to a @racket[triggered-buff], except without a specific @tech{trigger}.
+ Once activated, an applied buff applies the attribute given by @racket[attr].
+ The buff lasts for the specified time given by @racket[duration]
+ before going inactive. Each triggered buff can stack up until the limit specified by @racket[limit],
+ at which point any more activations of the buff will refresh the it at the max limit.
+ If @racket[party-wide] is @racket[#t], this buff will also apply to all characters in the lineup,
+ not just the character the buff is linked to.                                                      
 }
 
 @section{Stats}
@@ -388,30 +418,37 @@ Additionally, characters can equip a weapon and multiple artifacts to further au
 All @tech{stats} can be increased by a flat value.
 
 @subsection{Char stats}
-A @deftech{char stat} is one of the six stats a @tech{character} can have, which are the @tech{base stats} and @tech{crit stats}.
+A @deftech{char stat} is one of the six stats a @tech{character} can have,
+which are the @tech{base stats} and @tech{crit stats}.
 
 @subsection{Scaling stats}
-A @deftech{scaling stat} is a stat that can scale off of a @tech{percent stat}. They are either a @tech{base stat}, or a flat increase to damage, @racket[dmg].
+A @deftech{scaling stat} is a stat that can scale off of a @tech{percent stat}.
+They are either a @tech{base stat}, or a flat increase to damage, @racket[dmg].
 
 @subsection{Base stats}
-A @deftech{base stat} is one of a character's main stat attributes. They consist of @racket[hp], @racket[atk], @racket[def], and @racket[em],
+A @deftech{base stat} is one of a character's main stat attributes.
+They consist of @racket[hp], @racket[atk], @racket[def], and @racket[em],
 representing hit points, attack, defense, and elemental mastery. 
 
 They have corresponding @tech{percent stats} that @tech{scaling stats} scale off of. 
 
 @subsection{Flat stats}
-A @deftech{flat stat} is a stat that can only increase by a flat value. They are either a @tech{crit stat} or an increase to percent damage, @racket[dmg%].
+A @deftech{flat stat} is a stat that can only increase by a flat value.
+They are either a @tech{crit stat} or an increase to percent damage, @racket[dmg%].
 
 @subsection{Crit stats}
-A @deftech{crit stat} is a stat related to  characters critical strikes. They consist of @racket[critr], representing a character's chance to perform a critical strike,
+A @deftech{crit stat} is a stat related to  characters critical strikes.
+They consist of @racket[critr], representing a character's chance to perform a critical strike,
 and @racket[critr], representing the multipler of the critical strike's damage. 
 
 @subsection{Percent stat}
-A @deftech{percent stat} is the percent counterpart of a @tech{base stat}, and represent a percentage of their counterpart.
+A @deftech{percent stat} is the percent counterpart of a @tech{base stat},
+and represent a percentage of their counterpart.
 They consist of @racket[hp%], @racket[atk%], @racket[def%], and @racket[em%].
 
 @section{Attributes}
-An @deftech{attribute} is a calculation that depends on one or more @tech{stats}. There are multiple variations depending on the action that attribute is being used to perform.
+An @deftech{attribute} is a calculation that depends on one or more @tech{stats}.
+There are multiple variations depending on the action that attribute is being used to perform.
 
 @subsection{Buff attributes}
 @(define buff-attr-syntax "buff attribute syntax")
@@ -422,9 +459,12 @@ An @deftech{attribute} is a calculation that depends on one or more @tech{stats}
                        [scaling-attr scaling-stat?]
                        [scale-attr percent-stat?]
                        [value number?])]{
- A @deftech{buff attribute} indicates how a buff augments the stats of a character, and can be written in multiple ways.
+ A @deftech{buff attribute} indicates how a buff augments the stats of a character,
+ and can be written in multiple ways.
    
- In the first usage, increases a @tech{base stat} @racket[attr] by @racket[value]. If @racket[attr] is a @tech{percent stat}, then it increases the stat by a percentage equal to (@racket[value]/100).
+ In the first usage, increases a @tech{base stat} @racket[attr] by @racket[value].
+ If @racket[attr] is a @tech{percent stat},
+ then it increases the stat by a percentage equal to (@racket[value]/100).
  
  In the second usage, increases a @tech{base stat} @racket[base-attr] by (@racket[sattr] * (@racket[value]/100)),
  where @racket[sattr] is a @tech{percent stat}.
@@ -439,7 +479,8 @@ An @deftech{attribute} is a calculation that depends on one or more @tech{stats}
           #:contracts ([char-attr char-stat?]
                        [percent-attr percent-stat?]
                        [value number?])]{
- A @deftech{modifier attribute} indicates how to augment the stats of a character. However, it is more restrictive compared to a @tech{buff attribute}, as it
+ A @deftech{modifier attribute} indicates how to augment the stats of a character.
+ However, it is more restrictive compared to a @tech{buff attribute}, as it
  does not allow stat increases to be dependent on other @tech{stats} and does not allow @racket{dmg%} increases.
 }
 
@@ -449,7 +490,8 @@ An @deftech{attribute} is a calculation that depends on one or more @tech{stats}
          (base-dmg percent-attr value)
          #:contracts ([percent-attr percent-stat?]
                       [value number?])]{
- A @deftech{damage attribute} indicates what @tech{percent-stat} to scale an instance of damage off of by a percentage equal to (@racket[value]/100).
+ A @deftech{damage attribute} indicates what @tech{percent-stat}
+ to scale an instance of damage off of by a percentage equal to (@racket[value]/100).
 }
 
 @section{Attack keys}
@@ -461,13 +503,17 @@ An @deftech{attribute} is a calculation that depends on one or more @tech{stats}
                @defidform[#:kind attack-key-syntax Q]
                @defidform[#:kind attack-key-syntax ND]
                )]{
- Attack strings are composed of multiple different attacks, and each attack is represented with an @deftech{attack key}. Attack keys can be one of @racket[N], @racket[C],
+ Attack strings are composed of multiple different attacks,
+ and each attack is represented with an @deftech{attack key}.
+ Attack keys can be one of @racket[N], @racket[C],
  @racket[E], @racket[Q], @racket[ND], or @racket[Swap].
 }
 
 @defform[(Swap char-index)]{
 
- Performs a character swap, switching from the current character in the lineup to the character at index @racket[char-index] in the lineup. 
+ Performs a character swap,
+ switching from the current character in the lineup to the character
+ at index @racket[char-index] in the lineup. 
                                                                                                          
 }
 
@@ -484,7 +530,8 @@ An @deftech{attribute} is a calculation that depends on one or more @tech{stats}
                @defidform[#:kind element-syntax dendro]
                @defidform[#:kind element-syntax physical]
                )]
-All attacks and damage instances have an @deftech{element} type associated with them. These elements mainly serve to amplify damage in the event one or more elements is applied to an enemy at a time.
+All attacks and damage instances have an @deftech{element} type associated with them.
+These elements mainly serve to amplify damage in the event one or more elements is applied to an enemy at a time.
 Elements can be one of @racket[pyro], @racket[hydro], @racket[cryo], @racket[electro], @racket[geo], @racket[anemo], @racket[dendro], or @racket[physical].
 
 @section{Triggers}
@@ -495,6 +542,7 @@ Elements can be one of @racket[pyro], @racket[hydro], @racket[cryo], @racket[ele
                @defidform[#:kind trigger-syntax skill]
                @defidform[#:kind trigger-syntax burst]
                )]{
- A @deftech{trigger} is an action performed by a character that may activate a @racket[triggered-buff]. If a trigger matches the trigger of a trigger-buff, then the buff will activate.
+ A @deftech{trigger} is an action performed by a character that may activate a @racket[triggered-buff].
+ If a trigger matches the trigger of a trigger-buff, then the buff will activate.
  Triggers can be one of @racket[normal-attack], @racket[charged-attack], @racket[skill], or @racket[burst].
 }

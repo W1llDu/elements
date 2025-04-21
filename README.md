@@ -131,6 +131,7 @@ Here is a simple example that defines two similar characters, two lineups, and r
  )
 
 Example Print Output:
+
 Thanks for using ELEMENTS!
 
 []=======================================================================================[]

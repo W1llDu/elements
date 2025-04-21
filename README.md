@@ -6,7 +6,7 @@ This package implements a damage calculator as a hosted DSL. With `elements`, yo
 From there, you can setup damage rotations against enemies of varying toughness, and calculate potential damage output. Additionally, `elements` compares old rotations to newer ones,
 allowing you to easily keep track of what combination has provided the highest sustained damage. 
 
-Here is a simple example that defines two similar characters, two lineups, and runs different damage calculations on both. 
+Here is a simple example that defines a character with a set of weapons/skills and a lineup. Then, a calculation is run using the lineup to display the output of the rotation. 
 
 ```
 #lang racket
@@ -40,34 +40,6 @@ Here is a simple example that defines two similar characters, two lineups, and r
      #:party-wide #f])
    )
 
- (define-weapon vitality-staff
-   674 
-   (mod em 1000)
-
-   (unconditional-buff
-    [crit-up
-     #:effect (buff critd 20) 
-     #:party-wide #f])
-
-   (unconditional-buff
-    [crit-up
-     #:effect (buff hp% 50) 
-     #:party-wide #f])
-   )
-
- (define-skill all-attack-up
-   #:cooldown 25.0
-   #:attr (base-dmg atk% 125)
-   #:duration 0.1
-   #:type pyro
-   (applied-buff
-    [skill-atkup
-     #:effect (buff atk 125)
-     #:limit 1
-     #:party-wide #t
-     #:duration 10]) 
-   )
-
  (define-skill super-charge
    #:cooldown 60.0
    #:attr (base-dmg hp% 500)
@@ -87,19 +59,6 @@ Here is a simple example that defines two similar characters, two lineups, and r
      #:duration 30])
    )
 
- (define-skill basic-slash
-   #:cooldown 5.0 
-   #:attr (base-dmg atk% 25)
-   #:duration 1.0 
-   #:type pyro
-   (applied-buff
-    [skill-hpup
-     #:effect (buff hp 20)
-     #:limit 1
-     #:party-wide #f
-     #:duration 10.0]) 
-   )
-
  (define-skill holy-blast
    #:cooldown 90.0 
    #:attr (base-dmg atk% 500)
@@ -114,39 +73,10 @@ Here is a simple example that defines two similar characters, two lineups, and r
    (mod em 42)
    )
 
- (define-artifact cracked-goblet
-   "ruins of an the ancient city" 
-   (mod critr 46.6) 
-   (mod critd 16.2) 
-   (mod critr 3.0)
-   (mod def 128)
-   )
-
- (define-artifact heros-cap
-   "heros attire" 
-   (mod atk% 20.5) 
-   (mod atk 200)
-   )
-
  (define-artifact universal-timepiece
    "relics from the edge of space" 
    (mod critd 60) 
    (mod em 300)
-   )
-
- (define-character diluc
-   #:hp 12000 
-   #:def 500   
-   #:atk 900   
-   #:em 20    
-   #:critr 5     
-   #:critd 50    
-   #:attacks attack-chain
-   #:weapon wolfs-gravestone 
-   #:skill basic-slash 
-   #:burst all-attack-up 
-   #:artifacts flaming-feather
-   cracked-goblet
    )
 
  (define-character zhongli
@@ -157,10 +87,10 @@ Here is a simple example that defines two similar characters, two lineups, and r
    #:critr 75     
    #:critd 150    
    #:attacks attack-chain
-   #:weapon vitality-staff
+   #:weapon wolfs-gravestone
    #:skill super-charge 
    #:burst holy-blast
-   #:artifacts heros-cap
+   #:artifacts flaming-feather
    universal-timepiece
    )
 
@@ -177,13 +107,9 @@ Here is a simple example that defines two similar characters, two lineups, and r
    #:reduction 5
    )
 
- (define-team-lineup all-alone (diluc))
- 
- (define-team-lineup best-friends (diluc zhongli))
- 
- (calculate-rotation-damage all-alone dummy (N N N N N N N N N N N N))
+ (define-team-lineup all-alone (zhongli))
 
- (calculate-rotation-damage best-friends dummy (E Q N N N N (Swap 2) E Q N N N ND))
+ (calculate-rotation-damage all-alone dummy (E Q C N N N N ND))
  )
 
 Example Print Output:
@@ -191,21 +117,12 @@ Example Print Output:
 Thanks for using ELEMENTS!
 
 []=======================================================================================[]
-  Simulation run with input string: (N N N N N N N N N N N N)
-  Total damage: 44781.5 Total time: 9.0 seconds DPS: 4975.72
+  Simulation run with input string: (E Q C N N N N ND)
+  Total damage: 386765.04 Total time: 9.6 seconds DPS: 40288.02
 
 
-  The best run with this layout was a sequence of: (N N N N N N N N N N N N)
-  Total damage: 44781.5 Total time 9.0 seconds DPS: 4975.72
-[]=======================================================================================[]
-
-[]=======================================================================================[]
-  Simulation run with input string: (E Q N N N N (Swap 2) E Q N N N ND)
-  Total damage: 725403.92 Total time: 9.7 seconds DPS: 74783.91
-
-
-  The best run with this layout was a sequence of: (E Q N N N N (Swap 2) E Q N N N ND)
-  Total damage: 725403.92 Total time 9.7 seconds DPS: 74783.91
+  The best run with this layout was a sequence of: (E Q C N N N N ND)
+  Total damage: 386765.04 Total time 9.6 seconds DPS: 40288.02
 []=======================================================================================[]
 ```
 As seen above, `elements` allows for descriptive definitions of weapons, artifacts, characters, and more. This allows users to easily define new characters with varying stats, or modify current characters by applying new weapons, artifacts, or even useable skills.

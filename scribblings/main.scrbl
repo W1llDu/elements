@@ -37,6 +37,7 @@ allowing you to easily keep track of what combination has provided the highest s
  Defines a @deftech{weapon} with a base attack number that buffs a characters stats based on the given @tech{modifier attribute} @racket[attr]. The weapon also has a list of @tech{buffs}.
 
 }
+
 @examples[#:eval eval #:label #f
           (define-weapon wolfs-gravestone
             550
@@ -71,6 +72,7 @@ allowing you to easily keep track of what combination has provided the highest s
                                                                                                                    
 
 }
+
 @examples[#:eval eval #:label #f
           (define-skill all-attack-up
             #:cooldown 25.0

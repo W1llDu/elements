@@ -8,7 +8,7 @@ allowing you to easily keep track of what combination has provided the highest s
 
 Here is a simple example that defines a character with a set of weapons/skills and a lineup. Then, a calculation is run using the lineup to display the output of the rotation. 
 
-```
+```racket
 #lang racket
 
 (require "main.rkt")
@@ -111,7 +111,8 @@ Here is a simple example that defines a character with a set of weapons/skills a
 
  (calculate-rotation-damage all-alone dummy (E Q C N N N N ND))
  )
-
+```
+```
 Example Print Output:
 
 Thanks for using ELEMENTS!

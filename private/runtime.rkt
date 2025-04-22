@@ -18,6 +18,10 @@
          calc-dmg
          clear-file)
 
+#|
+  Calculates damage and duration of a `calc-dmg`.
+|#
+
 ;; An AttackKey is a Symbol
 ;; Representing a character attack, being one of
 ;; 'N 'C 'E 'Q, or 'ND

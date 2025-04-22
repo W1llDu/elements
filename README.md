@@ -130,9 +130,10 @@ Keywords also make the definitions easier to read, allowing their meanings to be
 Additionally, `elements` ensures that users only reference the data they mean to use. This means that if a character is given an artifact or attack-string for their equipped weapon, a readable error will be displayed before being run. With this, `elements` reduces
 the potential for unhelpful runtime errors by making sure the correct definitions are in the right places. This also extends to helpful compile time errors for duplicate names, giving clear errors when two definitions share the same name. 
 
+
 ## Installing and running
 
-Check out this Git repository, change directory into it, and run:
+Clone this Git repository and, in the directory, run:
 
 
 ```
@@ -156,3 +157,7 @@ Finally, you can run the tests with:
 ```
 raco test -p elements
 ```
+
+## Developer documentation:
+
+Want to work on Elements? See the developer documentation [here](private/README.md).

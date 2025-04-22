@@ -112,9 +112,8 @@ Here is a simple example that defines a character with a set of weapons/skills a
  (calculate-rotation-damage all-alone dummy (E Q C N N N N ND))
  )
 ```
+An example of the printed output would be:
 ```
-Example Print Output:
-
 Thanks for using ELEMENTS!
 
 []=======================================================================================[]

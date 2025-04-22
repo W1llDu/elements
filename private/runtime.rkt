@@ -453,10 +453,10 @@
 
 ; do a tree traversal (abstract out, use symbols?) flat incr vs incr by other amt (atk (def% 50)) increases atk by 50% of base def
 ; calc-total-stats : FlatCharacter (List Buff) -> Stat-Info
-(define (calc-total-stats char active-buffs)
+(define (calc-total-stats char active-buffs*)
   ; remember to scale % to decimal
   ; % is already desugared
-  (let ([buffs (append (flat-char-unconditional-buffs char) active-buffs)]
+  (let ([buffs (append (flat-char-unconditional-buffs char) active-buffs*)]
         [base-stat-info (make-stat-info (flat-char-hp char)
                                         (flat-char-atk char)
                                         (flat-char-def char)

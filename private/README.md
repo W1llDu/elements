@@ -1,11 +1,10 @@
-## elements devloper documentation
-This serves as a quick guide to the high level implementation of `elements`. To start,
+# Elements developer documentation
+This serves as a quick guide to the high level implementation of `Elements`. To start,
 the DSL is split into multiple files that handle different parts of the logic. 
 
 ## 1. Syntax and Macros (`main.rkt`)
 The top level of the DSL is the syntax and macros the user can use to define different weapons, skills, characters, etc.
-This also includes the macros that allow users to run calculations, and either return the raw data, or display the data
-in a formatted manner that also checks previous saved data.
+This also includes the macros that allow users to run calculations, getting either data in its raw form or displayed on the terminal providing additional info by checking previously saved data.
 
 ## 2. Compiler (`compile.rkt`)
 While binding classes ensure the proper definitions are put in the right spots, the user written code is also checked
@@ -14,6 +13,24 @@ for better/more helpful error messages, which is why we still include it.
 
 ## 3. Calculating Damage and Time (`runtime.rkt`)
 Once the code is properly checked, the actual calculations occur.
+The loop goes as follows:
+Determine the initial state, flattening structs to make them easier to work with.
+- Instead of multiple artifacts/weapons, collect all the buffs they grant into a flat list
+- Give applied buffs their respective triggers (attacks for weapons, skill use for skill/burst)
+For each action:
+- Update the state, and determine the next state
+  - Update/reset the normal attack counter
+  - Apply buffs, and remove buffs that expired (in two steps)
+  - Update the enemy element
+  - Update which character is on the field
+- Calculate the damage:
+  - Calculate the stats of the character at this moment (after buffs are applied and before they expire)
+  - Calculate the values for use in the [general damage formula](https://genshin-impact.fandom.com/wiki/Damage)
+  - Get the final damage of the attack from the formula
+- Calculate the time the action took
+Add these values to the accumulator, and recurse on the rest of the actions with the updated state (e.g. process buff expiry/application).
+Once there are no more actions, return the damage done and how much time it took, and save the result.
+
 In this file, the data is partially flattened to make accessing data easier for calculation purposes.
 Then, the overall damage and time are updated over time, tracking the current character, current attack, and active buffs.
 Once the rotation ends, the final result represents the damage done along with the time it took to do the rotation. 
